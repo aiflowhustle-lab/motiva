@@ -222,7 +222,7 @@ struct TrialOfferScreen: View {
                 .foregroundStyle(milestone.member ? Color.white : Color.motivaForeground)
                 .frame(width: 46, height: 46)
                 .background(milestone.member ? Color.motivaPrimary : Color.motivaBackground, in: Circle())
-                .overlay(Circle().stroke(Color.motivaForeground, lineWidth: 2))
+                .overlay(Circle().strokeBorder(Color.motivaForeground, lineWidth: 2))
 
             VStack(alignment: .leading, spacing: 7) {
                 Text(milestone.title)

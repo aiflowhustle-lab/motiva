@@ -107,7 +107,7 @@ struct NameScreen: View {
                 .background(Color.motivaInput, in: RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous))
                 .overlay(
                     RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous)
-                        .stroke(focused ? Color.motivaMuted : Color.motivaBorder, lineWidth: 1)
+                        .strokeBorder(focused ? Color.motivaMuted : Color.motivaBorder, lineWidth: 1)
                 )
 
             Spacer()
