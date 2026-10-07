@@ -1,0 +1,27 @@
+import SwiftUI
+
+@main
+struct MotivaApp: App {
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    @State private var app = AppState()
+
+    var body: some Scene {
+        WindowGroup {
+            Group {
+                if hasCompletedOnboarding {
+                    HomeView()
+                } else {
+                    OnboardingView { profile in
+                        profile.save()
+                        app.applyOnboarding(profile)
+                        hasCompletedOnboarding = true
+                        Task {
+                            await ReminderScheduler.schedule(app.reminders, quotes: QuoteLibrary.forYou.shuffled())
+                        }
+                    }
+                }
+            }
+            .environment(app)
+        }
+    }
+}
