@@ -65,6 +65,11 @@ private struct RevealModifier: ViewModifier {
 }
 
 extension View {
+    /// Plays `feedback` the moment a button is pressed down, so the tap feels immediate.
+    func pressHaptic(_ feedback: SensoryFeedback, isPressed: Bool) -> some View {
+        sensoryFeedback(feedback, trigger: isPressed) { _, pressed in pressed }
+    }
+
     /// Fades the view in while it drops into place from slightly above, once `visible` turns true.
     func reveal(_ visible: Bool, delay: Double) -> some View {
         modifier(RevealModifier(visible: visible, delay: delay))
@@ -97,6 +102,7 @@ struct PrimaryButtonStyle: ButtonStyle {
             )
             .opacity(configuration.isPressed ? 0.85 : 1)
             .contentShape(Rectangle())
+            .pressHaptic(.impact(weight: .medium), isPressed: configuration.isPressed)
     }
 }
 
@@ -123,6 +129,7 @@ struct ChoiceButtonStyle: ButtonStyle {
             )
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
             .contentShape(RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous))
+            .pressHaptic(.selection, isPressed: configuration.isPressed)
     }
 }
 
@@ -134,6 +141,7 @@ struct QuietButtonStyle: ButtonStyle {
             .foregroundStyle(color)
             .opacity(configuration.isPressed ? 0.6 : 1)
             .contentShape(Rectangle())
+            .pressHaptic(.impact(flexibility: .soft, intensity: 0.6), isPressed: configuration.isPressed)
     }
 }
 

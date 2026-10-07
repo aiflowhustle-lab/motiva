@@ -28,7 +28,6 @@ struct QuestionScreen: View {
                 chosen = nil
                 appeared = true
             }
-            .sensoryFeedback(.selection, trigger: chosen) { _, new in new != nil }
         }
     }
 

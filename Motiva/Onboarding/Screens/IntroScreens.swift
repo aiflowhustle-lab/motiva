@@ -185,6 +185,7 @@ struct RemindersScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .background(Color.motivaCard, in: RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous))
+                .sensoryFeedback(.selection, trigger: model.dailyQuoteCount)
 
                 VStack(spacing: 0) {
                     timeRow("Start at", selection: $model.reminderStart)
@@ -267,17 +268,26 @@ struct StatementScreen: View {
         return "\(month) \(day)"
     }
 
+    @State private var typed = false
+
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
-            Text(text)
+            TypewriterText(text: text, isComplete: $typed)
                 .titleStyle()
                 .frame(maxWidth: 302)
             Spacer()
             Button("Continue", action: onContinue)
                 .buttonStyle(step.usesDarkBackground ? .primaryInverted : .primary)
                 .padding(.bottom, 8)
+                .opacity(typed ? 1 : 0)
+                .offset(y: typed ? 0 : 12)
+                .allowsHitTesting(typed)
+                .animation(.easeOut(duration: 0.45), value: typed)
         }
+        .contentShape(Rectangle())
+        .onTapGesture { typed = true }
+        .accessibilityAction(named: "Show full text") { typed = true }
     }
 }
 

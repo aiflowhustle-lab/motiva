@@ -103,6 +103,7 @@ struct PressableButtonStyle: ButtonStyle {
             .scaleEffect(configuration.isPressed ? 0.97 : 1)
             .opacity(configuration.isPressed ? 0.9 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .pressHaptic(.impact(weight: .light), isPressed: configuration.isPressed)
     }
 }
 
@@ -120,6 +121,7 @@ struct CardButtonStyle: ButtonStyle {
             .shadow(color: .black.opacity(0.035), radius: 5, y: 2)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
+            .pressHaptic(.impact(weight: .light), isPressed: configuration.isPressed)
     }
 }
 
