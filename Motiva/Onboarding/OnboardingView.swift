@@ -78,9 +78,7 @@ struct OnboardingView: View {
         case .offer:
             TrialOfferScreen(trialReminder: $model.trialReminder, onClose: next)
         case .widget:
-            WidgetScreen(onContinue: next)
-        case .done:
-            DoneScreen(name: model.trimmedName) { onFinish(model.makeProfile()) }
+            WidgetScreen { onFinish(model.makeProfile()) }
         default:
             if let question = OnboardingContent.questions[step] {
                 QuestionScreen(model: model, step: step, question: question)

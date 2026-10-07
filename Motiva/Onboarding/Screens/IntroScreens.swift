@@ -292,24 +292,3 @@ struct StatementScreen: View {
         .accessibilityAction(named: "Show full text") { typed = true }
     }
 }
-
-struct DoneScreen: View {
-    let name: String
-    let onFinish: () -> Void
-
-    var body: some View {
-        VStack(spacing: 36) {
-            Spacer()
-            QuoteMarkArt()
-            Text(name.isEmpty ? "Your next chapter starts here." : "\(name), your next chapter starts here.")
-                .titleStyle()
-            Text("Believe in yourself and all that you are.")
-                .font(.system(size: 20))
-                .multilineTextAlignment(.center)
-            Spacer()
-            Button("Get started", action: onFinish)
-                .buttonStyle(.primary)
-                .padding(.bottom, 8)
-        }
-    }
-}

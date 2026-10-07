@@ -43,14 +43,14 @@ struct OnboardingFlowTests {
         #expect(model.step == .referral)
     }
 
-    @Test func walkingTheWholeFlowEndsOnDoneAndVisitsEveryScreenOnce() {
+    @Test func walkingTheWholeFlowEndsOnWidgetAndVisitsEveryScreenOnce() {
         let model = OnboardingModel()
         model.pick("Yes", in: .religion)
         var visited = [model.step]
-        while model.step != .done {
+        while model.step != .widget {
             model.advance(from: model.step)
             visited.append(model.step)
-            #expect(visited.count <= OnboardingStep.allCases.count, "Flow did not reach done")
+            #expect(visited.count <= OnboardingStep.allCases.count, "Flow did not reach the widget step")
             if visited.count > OnboardingStep.allCases.count { return }
         }
         #expect(Set(visited) == Set(OnboardingStep.allCases))

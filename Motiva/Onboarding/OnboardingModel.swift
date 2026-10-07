@@ -29,7 +29,7 @@ final class OnboardingModel {
         .welcome, .referral, .customize, .age, .name, .gender, .relationship, .religion, .beliefs, .zodiac,
         .sources, .consistency, .push, .achieve, .habit, .routine, .reminders, .meant,
         .quotes, .quoteStyle, .quoteAction, .mental, .vision, .rewires, .mood, .moodReason, .confront, .improve, .goals,
-        .topics, .plan, .phone, .freeTrial, .trial, .offer, .widget, .done,
+        .topics, .plan, .phone, .freeTrial, .trial, .offer, .widget,
     ]
 
     /// Screens pushed on top of the welcome screen; bound to the NavigationStack.

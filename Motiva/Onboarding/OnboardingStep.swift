@@ -4,14 +4,14 @@ enum OnboardingStep: String, Codable, Hashable, CaseIterable {
     case welcome, referral, customize, age, name, gender, relationship, religion, beliefs, zodiac
     case sources, consistency, push, achieve, habit, routine, reminders, meant
     case quotes, quoteStyle, quoteAction, mental, vision, rewires, mood, moodReason, confront, improve, goals
-    case topics, plan, phone, freeTrial, trial, offer, widget, done
+    case topics, plan, phone, freeTrial, trial, offer, widget
 
     var isIntro: Bool {
         [.welcome, .customize, .achieve, .quotes].contains(self)
     }
 
     var showsNavigationBar: Bool {
-        !isIntro && ![.done, .routine, .reminders, .meant, .plan, .phone, .freeTrial, .trial, .offer, .widget].contains(self)
+        !isIntro && ![.routine, .reminders, .meant, .plan, .phone, .freeTrial, .trial, .offer, .widget].contains(self)
     }
 
     var showsSkip: Bool {
