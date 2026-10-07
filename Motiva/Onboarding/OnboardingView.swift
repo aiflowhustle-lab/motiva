@@ -69,7 +69,7 @@ struct OnboardingView: View {
             RoutineScreen(onContinue: next)
         case .reminders:
             RemindersScreen(model: model)
-        case .meant, .phone, .trial:
+        case .meant, .phone, .freeTrial, .trial:
             StatementScreen(step: step, name: model.trimmedName, onContinue: next)
         case .topics:
             TopicsScreen(model: model)

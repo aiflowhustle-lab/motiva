@@ -254,6 +254,8 @@ struct StatementScreen: View {
             name.isEmpty ? "You are exactly where you are meant to be." : "You are exactly where you are meant to be, \(name)."
         case .phone:
             "You look at your phone hundreds of times a day. What you see there can change your whole mindset."
+        case .freeTrial:
+            "With your free trial, you get unlimited free access to everything for 3 days"
         default:
             "On \(Self.trialReminderDate),\nyou get a reminder that\nyour trial ends soon"
         }
