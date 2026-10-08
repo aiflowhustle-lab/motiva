@@ -64,6 +64,7 @@ struct HomeView: View {
         .onAppear {
             app.visit(currentQuote)
             registerOpen()
+            Task { await store.refreshEntitlements() }
             #if DEBUG
             // Launch with `-homeSheet topics|wallpapers|profile` to open a sheet directly.
             if let raw = UserDefaults.standard.string(forKey: "homeSheet") { sheet = HomeSheet(rawValue: raw) }

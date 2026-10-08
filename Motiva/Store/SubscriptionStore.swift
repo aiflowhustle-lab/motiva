@@ -106,12 +106,16 @@ final class SubscriptionStore: NSObject {
     /// Syncs purchases from the App Store and returns whether Premium is now active.
     func restore() async throws -> Bool {
         let info = try await Purchases.shared.restorePurchases()
-        apply(customerInfo: info)
+        await syncAfterPurchase(customerInfo: info)
         return isPremium
     }
 
     func refreshEntitlements() async {
-        if configured, let info = try? await Purchases.shared.customerInfo() {
+        if !configured {
+            Purchases.shared.delegate = self
+            configured = true
+        }
+        if Purchases.isConfigured, let info = try? await Purchases.shared.customerInfo(fetchPolicy: .fetchCurrent) {
             apply(customerInfo: info)
         }
         if !isPremium {
@@ -178,8 +182,11 @@ final class SubscriptionStore: NSObject {
 
     private func apply(customerInfo: CustomerInfo) {
         let entitlement = customerInfo.entitlements[RevenueCatConfiguration.premiumEntitlement]?.isActive == true
-        let subscribed = SubscriptionPlan.allCases.contains { customerInfo.activeSubscriptions.contains($0.rawValue) }
-        isPremium = entitlement || subscribed
+        let subscribed = SubscriptionPlan.allCases.contains { plan in
+            customerInfo.activeSubscriptions.contains(plan.rawValue)
+        }
+        let anyActiveEntitlement = customerInfo.entitlements.active.values.contains { $0.isActive }
+        isPremium = entitlement || subscribed || anyActiveEntitlement
     }
 }
 
