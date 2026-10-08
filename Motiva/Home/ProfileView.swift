@@ -103,17 +103,25 @@ struct ProfileView: View {
 
 struct WallpapersView: View {
     @Environment(AppState.self) private var app
+    @Environment(SubscriptionStore.self) private var store
     var showsClose = true
     var onDone: () -> Void
+
+    @State private var showsPaywall = false
 
     var body: some View {
         SheetPage(title: "Wallpapers") {
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 18), GridItem(.flexible(), spacing: 18)], spacing: 18) {
                 ForEach(FeedTheme.allCases) { theme in
                     let selected = app.theme == theme
+                    let locked = PremiumAccess.isThemeLocked(theme, isPremium: store.isPremium)
                     Button {
-                        app.theme = theme
-                        onDone()
+                        if locked {
+                            showsPaywall = true
+                        } else {
+                            app.theme = theme
+                            onDone()
+                        }
                     } label: {
                         VStack(spacing: 14) {
                             Text("Make room\nfor yourself.")
@@ -134,9 +142,18 @@ struct WallpapersView: View {
                             RoundedRectangle(cornerRadius: 22, style: .continuous)
                                 .strokeBorder(selected ? Color.motivaForeground : Color(hex: 0xC7C7C7), lineWidth: selected ? 2.5 : (theme == .paper ? 1 : 0))
                         }
+                        .overlay(alignment: .topTrailing) {
+                            if locked {
+                                Image(systemName: "crown.fill")
+                                    .font(.system(size: 14))
+                                    .padding(10)
+                                    .background(.ultraThinMaterial, in: Circle())
+                                    .padding(10)
+                            }
+                        }
                     }
                     .buttonStyle(PressableButtonStyle())
-                    .accessibilityLabel("\(theme.name) theme")
+                    .accessibilityLabel("\(theme.name) theme\(locked ? ", premium" : "")")
                     .accessibilityAddTraits(selected ? .isSelected : [])
                 }
             }
@@ -146,6 +163,9 @@ struct WallpapersView: View {
             if showsClose {
                 ToolbarItem(placement: .topBarLeading) { SheetCloseButton(action: onDone) }
             }
+        }
+        .fullScreenCover(isPresented: $showsPaywall) {
+            PaywallView { showsPaywall = false }
         }
     }
 }

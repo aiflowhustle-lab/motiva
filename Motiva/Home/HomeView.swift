@@ -64,6 +64,7 @@ struct HomeView: View {
         .onAppear {
             app.visit(currentQuote)
             registerOpen()
+            PremiumAccess.clampSelection(app: app, isPremium: store.isPremium)
             Task { await store.refreshEntitlements() }
             #if DEBUG
             // Launch with `-homeSheet topics|wallpapers|profile` to open a sheet directly.
@@ -75,6 +76,9 @@ struct HomeView: View {
                 registerOpen()
                 Task { await store.refreshEntitlements() }
             }
+        }
+        .onChange(of: store.isPremium) { _, isPremium in
+            PremiumAccess.clampSelection(app: app, isPremium: isPremium)
         }
         .onChange(of: page) { app.visit(currentQuote) }
         .onChange(of: app.topic) { page = 0 }

@@ -33,10 +33,12 @@ enum SavedList: String, Hashable, CaseIterable {
 
 struct TopicsView: View {
     @Environment(AppState.self) private var app
+    @Environment(SubscriptionStore.self) private var store
     var showsClose = true
     var onDone: () -> Void
 
     @State private var search = ""
+    @State private var showsPaywall = false
 
     private var filteredTopics: [QuoteTopic] {
         let query = search.trimmingCharacters(in: .whitespaces)
@@ -74,15 +76,22 @@ struct TopicsView: View {
                 }
                 .padding(.top, 20)
 
-                SectionTitle(text: search.isEmpty ? "Free today" : "Topics")
+                SectionTitle(text: search.isEmpty ? (store.isPremium ? "All topics" : "Free & Premium") : "Topics")
 
                 VStack(spacing: 14) {
                     if search.isEmpty {
-                        topicRow(name: "For you", symbol: "sparkle", selected: app.topic == nil) { app.topic = nil }
+                        topicRow(name: "For you", symbol: "sparkle", locked: false, selected: app.topic == nil) {
+                            app.topic = nil
+                        }
                     }
                     ForEach(filteredTopics) { topic in
-                        topicRow(name: topic.name, symbol: topic.symbol, selected: app.topic == topic.name) {
-                            app.topic = topic.name
+                        let locked = PremiumAccess.isTopicLocked(topic.name, isPremium: store.isPremium)
+                        topicRow(name: topic.name, symbol: topic.symbol, locked: locked, selected: app.topic == topic.name) {
+                            if locked {
+                                showsPaywall = true
+                            } else {
+                                app.topic = topic.name
+                            }
                         }
                     }
                     if filteredTopics.isEmpty {
@@ -100,21 +109,24 @@ struct TopicsView: View {
             }
         }
         .navigationDestination(for: SavedList.self) { SavedQuotesView(list: $0) }
+        .fullScreenCover(isPresented: $showsPaywall) {
+            PaywallView { showsPaywall = false }
+        }
     }
 
-    private func topicRow(name: String, symbol: String, selected: Bool, select: @escaping () -> Void) -> some View {
+    private func topicRow(name: String, symbol: String, locked: Bool, selected: Bool, select: @escaping () -> Void) -> some View {
         Button {
             select()
-            onDone()
+            if !locked { onDone() }
         } label: {
             HStack(spacing: 14) {
-                Image(systemName: symbol)
+                Image(systemName: locked ? "lock.fill" : symbol)
                     .font(.system(size: 22, weight: .light))
                     .frame(width: 30)
                 Text(name)
                     .font(.system(size: 21))
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: selected ? "checkmark" : "chevron.right")
+                Image(systemName: selected ? "checkmark" : (locked ? "crown" : "chevron.right"))
                     .font(.system(size: 16, weight: selected ? .bold : .regular))
                     .foregroundStyle(selected ? Color.motivaForeground : Color.sheetMuted)
             }
