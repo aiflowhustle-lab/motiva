@@ -1,4 +1,5 @@
 import Foundation
+import RevenueCat
 import StoreKit
 
 /// Products in the "Motiva Premium" subscription group. IDs must match App Store Connect.
@@ -26,23 +27,28 @@ enum StoreError: LocalizedError {
     }
 }
 
-/// Loads plans, buys and restores them, and tracks whether Premium is active.
+/// Loads plans via RevenueCat, handles purchases, and tracks the `premium` entitlement.
 @Observable
-final class SubscriptionStore {
+@MainActor
+final class SubscriptionStore: NSObject {
     private(set) var products: [SubscriptionPlan: Product] = [:]
     private(set) var trialEligible: Set<SubscriptionPlan> = []
     private(set) var isPremium = false
     private(set) var isLoading = false
 
-    @ObservationIgnored private var transactionUpdates: Task<Void, Never>?
+    @ObservationIgnored private var packages: [SubscriptionPlan: Package] = [:]
+    @ObservationIgnored private var configured = false
 
-    init() {
-        transactionUpdates = Task { [weak self] in
-            for await result in Transaction.updates {
-                if case .verified(let transaction) = result { await transaction.finish() }
-                await self?.refreshEntitlements()
-            }
-        }
+    override init() {
+        super.init()
+    }
+
+    static func configureRevenueCat() {
+        guard !Purchases.isConfigured else { return }
+        #if DEBUG
+        Purchases.logLevel = .debug
+        #endif
+        Purchases.configure(withAPIKey: RevenueCatConfiguration.publicAPIKey)
     }
 
     func product(_ plan: SubscriptionPlan) -> Product? { products[plan] }
@@ -56,23 +62,29 @@ final class SubscriptionStore {
     }
 
     func load() async {
+        if !configured {
+            Purchases.shared.delegate = self
+            configured = true
+        }
+
         isLoading = true
         defer { isLoading = false }
-        if let loaded = try? await Product.products(for: SubscriptionPlan.allCases.map(\.rawValue)) {
-            var products: [SubscriptionPlan: Product] = [:]
-            var eligible: Set<SubscriptionPlan> = []
-            for product in loaded {
-                guard let plan = SubscriptionPlan(rawValue: product.id) else { continue }
-                products[plan] = product
-                if await product.subscription?.isEligibleForIntroOffer == true { eligible.insert(plan) }
-            }
-            self.products = products
-            trialEligible = eligible
-        }
+
+        async let offeringsTask: Void = fetchOfferings()
+        async let productsTask: Void = fetchStoreProducts()
+        _ = await (offeringsTask, productsTask)
         await refreshEntitlements()
     }
 
     func purchase(_ plan: SubscriptionPlan) async throws -> PurchaseOutcome {
+        if let package = packages[plan] {
+            let result = try await Purchases.shared.purchase(package: package)
+            if result.userCancelled { return .cancelled }
+            apply(customerInfo: result.customerInfo)
+            trialEligible.removeAll()
+            return .purchased
+        }
+
         guard let product = products[plan] else { throw StoreError.productUnavailable }
         switch try await product.purchase() {
         case .success(let verification):
@@ -92,21 +104,61 @@ final class SubscriptionStore {
 
     /// Syncs purchases from the App Store and returns whether Premium is now active.
     func restore() async throws -> Bool {
-        try await AppStore.sync()
-        await refreshEntitlements()
+        let info = try await Purchases.shared.restorePurchases()
+        apply(customerInfo: info)
         return isPremium
     }
 
     func refreshEntitlements() async {
-        var active = false
-        for await result in Transaction.currentEntitlements {
-            if case .verified(let transaction) = result,
-               SubscriptionPlan(rawValue: transaction.productID) != nil,
-               transaction.revocationDate == nil {
-                active = true
+        guard configured else { return }
+        if let info = try? await Purchases.shared.customerInfo() {
+            apply(customerInfo: info)
+        }
+    }
+
+    private func fetchOfferings() async {
+        guard let offerings = try? await Purchases.shared.offerings() else { return }
+        var mapped: [SubscriptionPlan: Package] = [:]
+
+        let defaultOffering = offerings.offering(identifier: RevenueCatConfiguration.defaultOffering) ?? offerings.current
+        defaultOffering?.availablePackages.forEach { package in
+            if let plan = SubscriptionPlan(rawValue: package.storeProduct.productIdentifier) {
+                mapped[plan] = package
             }
         }
-        isPremium = active
+
+        offerings.offering(identifier: RevenueCatConfiguration.specialOffering)?.availablePackages.forEach { package in
+            if let plan = SubscriptionPlan(rawValue: package.storeProduct.productIdentifier) {
+                mapped[plan] = package
+            }
+        }
+
+        packages = mapped
+    }
+
+    private func fetchStoreProducts() async {
+        guard let loaded = try? await Product.products(for: SubscriptionPlan.allCases.map(\.rawValue)) else { return }
+        var products: [SubscriptionPlan: Product] = [:]
+        var eligible: Set<SubscriptionPlan> = []
+        for product in loaded {
+            guard let plan = SubscriptionPlan(rawValue: product.id) else { continue }
+            products[plan] = product
+            if await product.subscription?.isEligibleForIntroOffer == true { eligible.insert(plan) }
+        }
+        self.products = products
+        trialEligible = eligible
+    }
+
+    private func apply(customerInfo: CustomerInfo) {
+        isPremium = customerInfo.entitlements[RevenueCatConfiguration.premiumEntitlement]?.isActive == true
+    }
+}
+
+extension SubscriptionStore: PurchasesDelegate {
+    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+        Task { @MainActor in
+            apply(customerInfo: customerInfo)
+        }
     }
 }
 

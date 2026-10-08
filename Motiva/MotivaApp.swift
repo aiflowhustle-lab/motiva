@@ -6,6 +6,10 @@ struct MotivaApp: App {
     @State private var app = AppState()
     @State private var store = SubscriptionStore()
 
+    init() {
+        SubscriptionStore.configureRevenueCat()
+    }
+
     var body: some Scene {
         WindowGroup {
             Group {
