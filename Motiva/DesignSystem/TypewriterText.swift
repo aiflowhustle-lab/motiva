@@ -10,11 +10,15 @@ struct TypewriterText: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var visibleCount = 0
+    @State private var typeTick = 0
+    @State private var finishedTyping = 0
 
     var body: some View {
         Text(revealed)
             .accessibilityLabel(text)
             .task(id: text) { await type() }
+            .sensoryFeedback(.selection, trigger: typeTick) { _, tick in tick > 0 && tick % 4 == 0 }
+            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.65), trigger: finishedTyping)
     }
 
     private var revealed: AttributedString {
@@ -37,8 +41,10 @@ struct TypewriterText: View {
         for (index, character) in text.enumerated() {
             if Task.isCancelled || isComplete { return }
             visibleCount = index + 1
+            typeTick += 1
             try? await Task.sleep(for: pause(after: character))
         }
+        finishedTyping += 1
         isComplete = true
     }
 

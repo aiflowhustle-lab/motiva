@@ -32,6 +32,7 @@ struct TopicsScreen: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .sensoryFeedback(.selection, trigger: model.selections[.topics, default: []].count)
         } footer: {
             VStack(spacing: 14) {
                 Text("Try it for free")
@@ -133,6 +134,8 @@ struct TrialOfferScreen: View {
 
     @State private var appeared = false
     @State private var shine = false
+    @State private var paywallRevealHaptic = 0
+    @State private var paywallCTAHaptic = 0
 
     /// Entrance timing in seconds, sequenced top to bottom with the purchase button last.
     private enum Reveal {
@@ -228,7 +231,12 @@ struct TrialOfferScreen: View {
                 .padding(.bottom, 8)
         }
         .animation(.easeInOut(duration: 0.25), value: plan)
-        .onAppear { appeared = true }
+        .onAppear {
+            appeared = true
+            paywallRevealHaptic += 1
+        }
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55), trigger: paywallRevealHaptic)
+        .sensoryFeedback(.impact(weight: .medium), trigger: paywallCTAHaptic)
         .task { if store.products.isEmpty { await store.load() } }
         .fullScreenCover(isPresented: $showsSpecialOffer, onDismiss: onClose) {
             SpecialOfferScreen(trialReminder: trialReminder)
@@ -246,6 +254,7 @@ struct TrialOfferScreen: View {
         .task {
             try? await Task.sleep(for: .seconds(Reveal.button + 0.55))
             withAnimation(.easeInOut(duration: 0.9)) { shine = true }
+            paywallCTAHaptic += 1
         }
     }
 
@@ -475,6 +484,8 @@ struct SpecialOfferScreen: View {
     @State private var appeared = false
     @State private var purchasing = false
     @State private var errorMessage: String?
+    @State private var offerRevealHaptic = 0
+    @State private var offerCTAHaptic = 0
 
     private var special: Product? { store.product(.yearlySpecial) }
     private var regular: Product? { store.product(.yearly) }
@@ -566,7 +577,16 @@ struct SpecialOfferScreen: View {
         .foregroundStyle(Color.motivaForeground)
         .background(Color.motivaBackground.ignoresSafeArea())
         .environment(\.colorScheme, .light)
-        .onAppear { appeared = true }
+        .onAppear {
+            appeared = true
+            offerRevealHaptic += 1
+        }
+        .task {
+            try? await Task.sleep(for: .seconds(0.95))
+            offerCTAHaptic += 1
+        }
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55), trigger: offerRevealHaptic)
+        .sensoryFeedback(.impact(weight: .medium), trigger: offerCTAHaptic)
         .alert("Something went wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
         } message: {
             Text(errorMessage ?? "")

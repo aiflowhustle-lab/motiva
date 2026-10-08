@@ -287,5 +287,6 @@ struct StatementScreen: View {
         .contentShape(Rectangle())
         .onTapGesture { typed = true }
         .accessibilityAction(named: "Show full text") { typed = true }
+        .sensoryFeedback(.impact(weight: .light), trigger: typed) { _, done in done }
     }
 }

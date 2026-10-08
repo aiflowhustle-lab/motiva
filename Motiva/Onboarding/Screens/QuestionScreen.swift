@@ -7,6 +7,7 @@ struct QuestionScreen: View {
 
     @State private var appeared = false
     @State private var chosen: String?
+    @State private var choicePulse = 0
 
     /// Single-answer questions without a Continue button move on as soon as an option is tapped.
     private var advancesOnTap: Bool { !question.hasContinueButton && !question.showsSelectionCircle }
@@ -60,12 +61,15 @@ struct QuestionScreen: View {
                 }
             }
         }
+        .sensoryFeedback(.selection, trigger: choicePulse)
+        .sensoryFeedback(.selection, trigger: chosen) { _, new in new != nil }
     }
 
     private func choice(_ option: String, index: Int) -> some View {
         let selected = model.selected(option, in: step)
         let highlighted = advancesOnTap && (chosen == option || (chosen == nil && selected))
         return Button {
+            choicePulse += 1
             if advancesOnTap {
                 choose(option)
             } else if question.multi {

@@ -219,7 +219,7 @@ private struct QuotePage: View {
                         .frame(width: 58, height: 58)
                 }
                 .accessibilityLabel(liked ? "Unfavorite quote" : "Favorite quote")
-                .sensoryFeedback(.impact(weight: .light), trigger: liked)
+                .sensoryFeedback(.impact(weight: .medium), trigger: liked)
             }
             .buttonStyle(.plain)
         }
@@ -231,6 +231,7 @@ private struct QuotePage: View {
             if !liked { app.toggleFavorite(quote) }
             burst = true
         }
+        .sensoryFeedback(.impact(weight: .medium), trigger: burst) { _, active in active }
         .overlay {
             Image(systemName: "heart.fill")
                 .font(.system(size: 110))
