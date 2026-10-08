@@ -221,6 +221,7 @@ struct SettingsView: View {
                 NavigationLink("Reminders", value: ProfileDestination.reminders)
             }
             Section {
+                Button("Help & Support") { openURL(LegalLinks.help) }
                 Button("Restore purchases") {
                     Task {
                         do {
