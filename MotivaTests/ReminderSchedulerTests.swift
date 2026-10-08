@@ -60,4 +60,11 @@ struct ReminderSchedulerTests {
     @Test func zeroRemindersSchedulesNothing() {
         #expect(ReminderScheduler.times(for: settings(count: 0, from: (9, 0), to: (22, 0)), calendar: calendar).isEmpty)
     }
+
+    @Test func trialReminderFiresOneDayBeforeTheTrialEnds() {
+        let now = Date(timeIntervalSince1970: 1_800_000_000)
+        #expect(ReminderScheduler.trialReminderDate(trialDays: 3, now: now, calendar: calendar)
+                == calendar.date(byAdding: .day, value: 2, to: now))
+        #expect(ReminderScheduler.trialReminderDate(trialDays: 1, now: now, calendar: calendar) == nil)
+    }
 }

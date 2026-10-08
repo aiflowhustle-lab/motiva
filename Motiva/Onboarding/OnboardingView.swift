@@ -89,4 +89,5 @@ struct OnboardingView: View {
 
 #Preview {
     OnboardingView { _ in }
+        .environment(SubscriptionStore())
 }

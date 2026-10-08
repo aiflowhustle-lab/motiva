@@ -4,6 +4,7 @@ import SwiftUI
 struct MotivaApp: App {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var app = AppState()
+    @State private var store = SubscriptionStore()
 
     var body: some Scene {
         WindowGroup {
@@ -22,6 +23,8 @@ struct MotivaApp: App {
                 }
             }
             .environment(app)
+            .environment(store)
+            .task { await store.load() }
         }
     }
 }

@@ -49,9 +49,14 @@ struct UnlockBanner: View {
     var message = "Access all topics, quotes, themes, and remove ads!"
     var symbol = "lock.open"
 
+    @Environment(SubscriptionStore.self) private var store
     @State private var showsPaywall = false
 
     var body: some View {
+        if !store.isPremium { banner }
+    }
+
+    private var banner: some View {
         Button { showsPaywall = true } label: {
             HStack(spacing: 18) {
                 VStack(alignment: .leading, spacing: 7) {

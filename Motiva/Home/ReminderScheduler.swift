@@ -23,6 +23,28 @@ enum ReminderScheduler {
         }
     }
 
+    static let trialReminderIdentifier = "motiva.trialReminder"
+
+    /// Notifies the user one day before a free trial that started now ends.
+    static func scheduleTrialReminder(trialDays: Int, now: Date = .now) async {
+        let center = UNUserNotificationCenter.current()
+        guard (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) == true,
+              let fireDate = trialReminderDate(trialDays: trialDays, now: now) else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Your free trial ends tomorrow"
+        content.body = "Motiva Premium renews tomorrow. You can cancel anytime in Settings."
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: fireDate.timeIntervalSince(now), repeats: false)
+        try? await center.add(UNNotificationRequest(identifier: trialReminderIdentifier, content: content, trigger: trigger))
+    }
+
+    static func trialReminderDate(trialDays: Int, now: Date = .now, calendar: Calendar = .current) -> Date? {
+        guard trialDays > 1 else { return nil }
+        return calendar.date(byAdding: .day, value: trialDays - 1, to: now)
+    }
+
     /// The time of day for each reminder, spaced evenly from start to end. An end at or before the start wraps past midnight.
     static func times(for settings: ReminderSettings, calendar: Calendar = .current) -> [DateComponents] {
         let count = min(settings.count, maxReminders)

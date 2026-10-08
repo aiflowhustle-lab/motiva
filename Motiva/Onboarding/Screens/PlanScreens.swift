@@ -1,3 +1,4 @@
+import StoreKit
 import SwiftUI
 
 struct TopicsScreen: View {
@@ -110,19 +111,25 @@ struct TrialOfferScreen: View {
     @Binding var trialReminder: Bool
     let onClose: () -> Void
 
+    @Environment(SubscriptionStore.self) private var store
+    @AppStorage("hasSeenSpecialOffer") private var hasSeenSpecialOffer = false
+
     private enum PaywallAlert: Identifiable {
-        case trial, restore, legal(String)
+        case restored(Bool), failed(String), legal(String)
 
         var id: String {
             switch self {
-            case .trial: "trial"
-            case .restore: "restore"
+            case .restored: "restored"
+            case .failed(let message): message
             case .legal(let title): title
             }
         }
     }
 
     @State private var alert: PaywallAlert?
+    @State private var plan: SubscriptionPlan = .yearly
+    @State private var purchasing = false
+    @State private var showsSpecialOffer = false
 
     @State private var appeared = false
     @State private var shine = false
@@ -133,19 +140,19 @@ struct TrialOfferScreen: View {
         static let close = start
         static let title = start + 0.1
         static func milestone(_ index: Int) -> Double { start + 0.35 + Double(index) * 0.22 }
-        static let toggle = milestone(4)
+        static let plans = milestone(4)
+        static let toggle = plans + 0.1
         static let price = toggle + 0.12
         static let links = price + 0.1
         static let button = links + 0.18
     }
 
-    private struct Milestone: Identifiable {
+    private struct Milestone {
         let symbol: String
         let title: String
         let description: String
         var completed = false
         var member = false
-        var id: String { title }
     }
 
     private static func dateLabel(daysFromNow days: Int) -> String {
@@ -153,18 +160,30 @@ struct TrialOfferScreen: View {
         return date.formatted(.dateTime.day(.twoDigits).month(.abbreviated))
     }
 
+    private var product: Product? { store.product(plan) }
+    private var trialDays: Int? { store.freeTrial(for: plan)?.days }
+
     private var milestones: [Milestone] {
-        [
-            Milestone(symbol: "checkmark.circle", title: "Install the app", description: "Set it up to match your goals", completed: true),
-            Milestone(symbol: "lock.open", title: "Today - Free trial starts", description: "Enjoy full access, totally free for your first 3 days"),
-            Milestone(symbol: "bell", title: "\(Self.dateLabel(daysFromNow: 2)) - Trial reminder", description: "To let you know it’s ending soon"),
-            Milestone(symbol: "crown", title: "\(Self.dateLabel(daysFromNow: 3)) - Become member", description: "Your trial ends unless canceled", member: true),
+        let installed = Milestone(symbol: "checkmark.circle", title: "Install the app", description: "Set it up to match your goals", completed: true)
+        if let days = trialDays {
+            return [
+                installed,
+                Milestone(symbol: "lock.open", title: "Today - Free trial starts", description: "Enjoy full access, totally free for your first \(days) days"),
+                Milestone(symbol: "bell", title: "\(Self.dateLabel(daysFromNow: days - 1)) - Trial reminder", description: "To let you know it’s ending soon"),
+                Milestone(symbol: "crown", title: "\(Self.dateLabel(daysFromNow: days)) - Become member", description: "Your trial ends unless canceled", member: true),
+            ]
+        }
+        return [
+            installed,
+            Milestone(symbol: "lock.open", title: "Today - Premium unlocked", description: "Every quote, topic and theme"),
+            Milestone(symbol: "arrow.clockwise", title: plan == .monthly ? "Renews monthly" : "Renews yearly", description: "Cancel anytime in Settings"),
+            Milestone(symbol: "crown", title: "Become member", description: "Grow a little every day", member: true),
         ]
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: onClose) {
+            Button(action: close) {
                 Image(systemName: "xmark")
                     .font(.system(size: 22, weight: .light))
                     .frame(width: 44, height: 44, alignment: .leading)
@@ -176,14 +195,14 @@ struct TrialOfferScreen: View {
 
             ScrollingScreen {
                 VStack(spacing: 0) {
-                    Text("Upgrade Motiva for free")
+                    Text(trialDays == nil ? "Upgrade to Motiva Premium" : "Upgrade Motiva for free")
                         .font(.system(size: 25, weight: .bold))
                         .multilineTextAlignment(.center)
                         .padding(.top, 10)
                         .reveal(appeared, delay: Reveal.title)
 
                     VStack(alignment: .leading, spacing: 21) {
-                        ForEach(Array(milestones.enumerated()), id: \.element.id) { index, milestone in
+                        ForEach(Array(milestones.enumerated()), id: \.offset) { index, milestone in
                             timelineRow(milestone, index: index, isLast: index == milestones.count - 1)
                         }
                     }
@@ -194,17 +213,20 @@ struct TrialOfferScreen: View {
                 footer
             }
         }
+        .animation(.easeInOut(duration: 0.25), value: plan)
         .onAppear { appeared = true }
+        .task { if store.products.isEmpty { await store.load() } }
+        .fullScreenCover(isPresented: $showsSpecialOffer, onDismiss: onClose) {
+            SpecialOfferScreen(trialReminder: trialReminder)
+        }
         .alert(item: $alert) { alert in
             switch alert {
-            case .trial:
-                Alert(
-                    title: Text("Free trial preview"),
-                    message: Text("Subscriptions aren’t set up yet, so no trial will start and you won’t be charged."),
-                    dismissButton: .default(Text("Continue"), action: onClose)
-                )
-            case .restore:
-                Alert(title: Text("No purchases to restore"), message: Text("There are no previous purchases on this account."))
+            case .restored(let found):
+                found
+                    ? Alert(title: Text("Purchases restored"), message: Text("Motiva Premium is active again."), dismissButton: .default(Text("Continue"), action: onClose))
+                    : Alert(title: Text("No purchases to restore"), message: Text("There are no previous purchases on this Apple Account."))
+            case .failed(let message):
+                Alert(title: Text("Something went wrong"), message: Text(message))
             case .legal(let title):
                 Alert(title: Text(title), message: Text("Motiva’s legal documents haven’t been added yet."))
             }
@@ -212,6 +234,42 @@ struct TrialOfferScreen: View {
         .task {
             try? await Task.sleep(for: .seconds(Reveal.button + 0.55))
             withAnimation(.easeInOut(duration: 0.9)) { shine = true }
+        }
+    }
+
+    private func close() {
+        if !store.isPremium, !hasSeenSpecialOffer, store.product(.yearlySpecial) != nil {
+            hasSeenSpecialOffer = true
+            showsSpecialOffer = true
+        } else {
+            onClose()
+        }
+    }
+
+    private func subscribe() {
+        let trialDays = trialDays
+        Task {
+            purchasing = true
+            defer { purchasing = false }
+            do {
+                guard try await store.purchase(plan) == .purchased else { return }
+                if trialReminder, let trialDays {
+                    await ReminderScheduler.scheduleTrialReminder(trialDays: trialDays)
+                }
+                onClose()
+            } catch {
+                alert = .failed(error.localizedDescription)
+            }
+        }
+    }
+
+    private func restore() {
+        Task {
+            do {
+                alert = .restored(try await store.restore())
+            } catch {
+                alert = .failed(error.localizedDescription)
+            }
         }
     }
 
@@ -254,31 +312,52 @@ struct TrialOfferScreen: View {
 
     private var footer: some View {
         VStack(spacing: 0) {
-            Toggle("Reminder before trial ends", isOn: $trialReminder)
-                .font(.motivaBody)
-                .tint(Color.motivaPrimary)
-                .padding(16)
-                .background(Color.motivaCard, in: Capsule())
-                .reveal(appeared, delay: Reveal.toggle)
-                .padding(.bottom, 17)
+            HStack(spacing: 12) {
+                PlanCard(title: "Yearly", detail: store.product(.yearly).map { "\($0.monthlyEquivalent)/month" },
+                         badge: savingsBadge, selected: plan == .yearly) { plan = .yearly }
+                PlanCard(title: "Monthly", detail: store.product(.monthly).map { "\($0.displayPrice)/month" },
+                         selected: plan == .monthly) { plan = .monthly }
+            }
+            .sensoryFeedback(.selection, trigger: plan)
+            .reveal(appeared, delay: Reveal.plans)
+            .padding(.bottom, 14)
 
-            Button("Try for $0.00") { alert = .trial }
-                .buttonStyle(.primary)
-                .overlay { ShineSweep(active: shine) }
-                .shadow(color: .black.opacity(0.08), radius: 40, y: 24)
-                .opacity(appeared ? 1 : 0)
-                .scaleEffect(appeared ? 1 : 0.94)
-                .animation(.spring(duration: 0.6, bounce: 0.25).delay(Reveal.button), value: appeared)
+            if trialDays != nil {
+                Toggle("Reminder before trial ends", isOn: $trialReminder)
+                    .font(.motivaBody)
+                    .tint(Color.motivaPrimary)
+                    .padding(16)
+                    .background(Color.motivaCard, in: Capsule())
+                    .reveal(appeared, delay: Reveal.toggle)
+                    .padding(.bottom, 17)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
 
-            (Text("$1.66/month, billed yearly as\n") + Text("$19.99/year").fontWeight(.semibold))
+            Button(action: subscribe) {
+                if purchasing {
+                    ProgressView().tint(.white)
+                } else {
+                    Text(buttonTitle)
+                }
+            }
+            .buttonStyle(.primary)
+            .disabled(product == nil || purchasing)
+            .overlay { ShineSweep(active: shine) }
+            .shadow(color: .black.opacity(0.08), radius: 40, y: 24)
+            .opacity(appeared ? 1 : 0)
+            .scaleEffect(appeared ? 1 : 0.94)
+            .animation(.spring(duration: 0.6, bounce: 0.25).delay(Reveal.button), value: appeared)
+
+            priceLine
                 .font(.system(size: 17))
                 .multilineTextAlignment(.center)
+                .frame(minHeight: 44)
                 .padding(.top, 13)
-                .padding(.bottom, 28)
+                .padding(.bottom, 22)
                 .reveal(appeared, delay: Reveal.price)
 
             HStack {
-                Button("Restore") { alert = .restore }
+                Button("Restore", action: restore)
                 Spacer()
                 Button("Terms & Conditions") { alert = .legal("Terms & Conditions") }
                 Spacer()
@@ -287,6 +366,201 @@ struct TrialOfferScreen: View {
             .font(.system(size: 12))
             .buttonStyle(.quiet(.motivaForeground))
             .reveal(appeared, delay: Reveal.links)
+        }
+    }
+
+    private var buttonTitle: String {
+        guard let product else { return "Loading…" }
+        return trialDays == nil ? "Subscribe" : "Try for \(Decimal.zero.formatted(product.priceFormatStyle))"
+    }
+
+    private var savingsBadge: String? {
+        guard let yearly = store.product(.yearly), let monthly = store.product(.monthly), monthly.price > 0 else { return nil }
+        let saving = 1 - NSDecimalNumber(decimal: yearly.price).doubleValue / (NSDecimalNumber(decimal: monthly.price).doubleValue * 12)
+        return saving > 0.05 ? "SAVE \(Int((saving * 100).rounded()))%" : nil
+    }
+
+    @ViewBuilder private var priceLine: some View {
+        if let product {
+            switch (plan, trialDays) {
+            case (.monthly, _):
+                Text("Billed monthly at ") + Text("\(product.displayPrice)/month").fontWeight(.semibold) + Text(".\nCancel anytime.")
+            case (_, let days?):
+                Text("\(days) days free, then \(product.monthlyEquivalent)/month,\nbilled yearly as ") + Text("\(product.displayPrice)/year").fontWeight(.semibold)
+            default:
+                Text("\(product.monthlyEquivalent)/month, billed yearly as\n") + Text("\(product.displayPrice)/year").fontWeight(.semibold)
+            }
+        } else if store.isLoading {
+            ProgressView()
+        } else {
+            Button("Couldn’t load prices. Tap to retry.") { Task { await store.load() } }
+                .buttonStyle(.quiet(.motivaMuted))
+        }
+    }
+}
+
+private struct PlanCard: View {
+    let title: String
+    let detail: String?
+    var badge: String?
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title).font(.system(size: 17, weight: .semibold))
+                Text(detail ?? " ")
+                    .font(.system(size: 14))
+                    .foregroundStyle(Color.motivaMuted)
+                    .redacted(reason: detail == nil ? .placeholder : [])
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(Color.motivaCard, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .strokeBorder(selected ? Color.motivaForeground : Color.motivaBorder, lineWidth: selected ? 2 : 1)
+            }
+            .overlay(alignment: .topTrailing) {
+                if let badge {
+                    Text(badge)
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.motivaPrimary, in: Capsule())
+                        .offset(x: -10, y: -9)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// Shown once, when someone closes the paywall without subscribing.
+struct SpecialOfferScreen: View {
+    let trialReminder: Bool
+
+    @Environment(SubscriptionStore.self) private var store
+    @Environment(\.dismiss) private var dismiss
+    @State private var appeared = false
+    @State private var purchasing = false
+    @State private var errorMessage: String?
+
+    private var special: Product? { store.product(.yearlySpecial) }
+    private var regular: Product? { store.product(.yearly) }
+    private var trialDays: Int? { store.freeTrial(for: .yearlySpecial)?.days }
+
+    private var discount: Int? {
+        guard let special, let regular, regular.price > 0 else { return nil }
+        let ratio = NSDecimalNumber(decimal: special.price).doubleValue / NSDecimalNumber(decimal: regular.price).doubleValue
+        return Int(((1 - ratio) * 100).rounded())
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Button { dismiss() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 22, weight: .light))
+                    .frame(width: 44, height: 44, alignment: .leading)
+            }
+            .buttonStyle(.quiet(.motivaForeground))
+            .accessibilityLabel("Close offer")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .reveal(appeared, delay: 0.2)
+
+            Spacer()
+
+            Text("ONE-TIME OFFER")
+                .font(.system(size: 13, weight: .bold))
+                .tracking(2)
+                .foregroundStyle(Color.motivaMuted)
+                .reveal(appeared, delay: 0.3)
+
+            Text(discount.map { "\($0)% off\nMotiva Premium" } ?? "Motiva Premium")
+                .font(.system(size: 40, weight: .bold))
+                .multilineTextAlignment(.center)
+                .padding(.top, 14)
+                .reveal(appeared, delay: 0.42)
+
+            if let special {
+                HStack(alignment: .firstTextBaseline, spacing: 10) {
+                    if let regular {
+                        Text(regular.displayPrice)
+                            .font(.system(size: 22))
+                            .strikethrough()
+                            .foregroundStyle(Color.motivaMuted)
+                    }
+                    Text("\(special.displayPrice)/year")
+                        .font(.system(size: 28, weight: .bold))
+                }
+                .padding(.top, 30)
+                .reveal(appeared, delay: 0.56)
+
+                Text("Just \(special.monthlyEquivalent)/month")
+                    .font(.system(size: 17))
+                    .foregroundStyle(Color.motivaMuted)
+                    .padding(.top, 6)
+                    .reveal(appeared, delay: 0.64)
+            }
+
+            Spacer()
+
+            Button(action: claim) {
+                if purchasing {
+                    ProgressView().tint(.white)
+                } else {
+                    Text(trialDays.map { "Start \($0)-day free trial" } ?? "Claim offer")
+                }
+            }
+            .buttonStyle(.primary)
+            .disabled(special == nil || purchasing)
+            .opacity(appeared ? 1 : 0)
+            .scaleEffect(appeared ? 1 : 0.94)
+            .animation(.spring(duration: 0.6, bounce: 0.25).delay(0.85), value: appeared)
+
+            Group {
+                if let special {
+                    Text(trialDays.map { "\($0) days free, then \(special.displayPrice)/year. Cancel anytime." }
+                         ?? "Billed yearly at \(special.displayPrice). Cancel anytime.")
+                }
+                Text("This offer won’t be shown again.")
+                    .foregroundStyle(Color.motivaMuted)
+            }
+            .font(.system(size: 14))
+            .multilineTextAlignment(.center)
+            .padding(.top, 10)
+            .reveal(appeared, delay: 0.75)
+            .padding(.bottom, 8)
+        }
+        .padding(.horizontal, Metrics.screenPadding)
+        .foregroundStyle(Color.motivaForeground)
+        .background(Color.motivaBackground.ignoresSafeArea())
+        .environment(\.colorScheme, .light)
+        .onAppear { appeared = true }
+        .alert("Something went wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
+        } message: {
+            Text(errorMessage ?? "")
+        }
+    }
+
+    private func claim() {
+        let trialDays = trialDays
+        Task {
+            purchasing = true
+            defer { purchasing = false }
+            do {
+                guard try await store.purchase(.yearlySpecial) == .purchased else { return }
+                if trialReminder, let trialDays {
+                    await ReminderScheduler.scheduleTrialReminder(trialDays: trialDays)
+                }
+                dismiss()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
 }

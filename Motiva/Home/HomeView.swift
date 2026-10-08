@@ -7,6 +7,7 @@ enum HomeSheet: String, Identifiable {
 
 struct HomeView: View {
     @Environment(AppState.self) private var app
+    @Environment(SubscriptionStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
 
     @State private var page: Int? = 0
@@ -94,8 +95,10 @@ struct HomeView: View {
     private var topBar: some View {
         HStack(spacing: 12) {
             favoriteMeter.frame(maxWidth: .infinity)
-            FeedIconButton(symbol: "crown", label: "Premium", background: theme.control) {
-                showsPaywall = true
+            if !store.isPremium {
+                FeedIconButton(symbol: "crown", label: "Premium", background: theme.control) {
+                    showsPaywall = true
+                }
             }
         }
     }
@@ -255,5 +258,7 @@ private struct FeedIconButton: View {
 }
 
 #Preview {
-    HomeView().environment(AppState())
+    HomeView()
+        .environment(AppState())
+        .environment(SubscriptionStore())
 }
