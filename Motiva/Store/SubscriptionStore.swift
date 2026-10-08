@@ -80,8 +80,8 @@ final class SubscriptionStore: NSObject {
         if let package = packages[plan] {
             let result = try await Purchases.shared.purchase(package: package)
             if result.userCancelled { return .cancelled }
-            apply(customerInfo: result.customerInfo)
             trialEligible.removeAll()
+            await syncAfterPurchase(customerInfo: result.customerInfo)
             return .purchased
         }
 
@@ -91,6 +91,7 @@ final class SubscriptionStore: NSObject {
             guard case .verified(let transaction) = verification else { throw StoreError.unverified }
             await transaction.finish()
             trialEligible.removeAll()
+            try? await Purchases.shared.syncPurchases()
             await refreshEntitlements()
             return .purchased
         case .pending:
@@ -110,9 +111,35 @@ final class SubscriptionStore: NSObject {
     }
 
     func refreshEntitlements() async {
-        guard configured else { return }
-        if let info = try? await Purchases.shared.customerInfo() {
+        if configured, let info = try? await Purchases.shared.customerInfo() {
             apply(customerInfo: info)
+        }
+        if !isPremium {
+            await applyStoreKitEntitlements()
+        }
+    }
+
+    private func syncAfterPurchase(customerInfo: CustomerInfo) async {
+        apply(customerInfo: customerInfo)
+        if !isPremium {
+            try? await Purchases.shared.syncPurchases()
+            if let info = try? await Purchases.shared.customerInfo() {
+                apply(customerInfo: info)
+            }
+        }
+        if !isPremium {
+            await applyStoreKitEntitlements()
+        }
+    }
+
+    /// Unlocks premium when Apple shows an active subscription, even if RevenueCat entitlements aren’t wired yet.
+    private func applyStoreKitEntitlements() async {
+        for await result in Transaction.currentEntitlements {
+            guard case .verified(let transaction) = result,
+                  SubscriptionPlan(rawValue: transaction.productID) != nil,
+                  transaction.revocationDate == nil else { continue }
+            isPremium = true
+            return
         }
     }
 
@@ -150,7 +177,9 @@ final class SubscriptionStore: NSObject {
     }
 
     private func apply(customerInfo: CustomerInfo) {
-        isPremium = customerInfo.entitlements[RevenueCatConfiguration.premiumEntitlement]?.isActive == true
+        let entitlement = customerInfo.entitlements[RevenueCatConfiguration.premiumEntitlement]?.isActive == true
+        let subscribed = SubscriptionPlan.allCases.contains { customerInfo.activeSubscriptions.contains($0.rawValue) }
+        isPremium = entitlement || subscribed
     }
 }
 

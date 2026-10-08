@@ -253,6 +253,7 @@ struct TrialOfferScreen: View {
             defer { purchasing = false }
             do {
                 guard try await store.purchase(plan) == .purchased else { return }
+                await store.refreshEntitlements()
                 if trialReminder, let trialDays {
                     await ReminderScheduler.scheduleTrialReminder(trialDays: trialDays)
                 }
@@ -554,6 +555,7 @@ struct SpecialOfferScreen: View {
             defer { purchasing = false }
             do {
                 guard try await store.purchase(.yearlySpecial) == .purchased else { return }
+                await store.refreshEntitlements()
                 if trialReminder, let trialDays {
                     await ReminderScheduler.scheduleTrialReminder(trialDays: trialDays)
                 }

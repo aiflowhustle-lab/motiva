@@ -70,7 +70,10 @@ struct HomeView: View {
             #endif
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { registerOpen() }
+            if phase == .active {
+                registerOpen()
+                Task { await store.refreshEntitlements() }
+            }
         }
         .onChange(of: page) { app.visit(currentQuote) }
         .onChange(of: app.topic) { page = 0 }
