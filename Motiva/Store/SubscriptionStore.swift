@@ -98,7 +98,7 @@ final class SubscriptionStore: NSObject {
             guard case .verified(let transaction) = verification else { throw StoreError.unverified }
             await transaction.finish()
             trialEligible.removeAll()
-            try? await Purchases.shared.syncPurchases()
+            _ = try? await Purchases.shared.syncPurchases()
             await refreshEntitlements()
             return .purchased
         case .pending:
@@ -133,7 +133,7 @@ final class SubscriptionStore: NSObject {
     private func syncAfterPurchase(customerInfo: CustomerInfo) async {
         apply(customerInfo: customerInfo)
         if !isPremium {
-            try? await Purchases.shared.syncPurchases()
+            _ = try? await Purchases.shared.syncPurchases()
             if let info = try? await Purchases.shared.customerInfo() {
                 apply(customerInfo: info)
             }
