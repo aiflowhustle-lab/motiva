@@ -112,16 +112,16 @@ struct TrialOfferScreen: View {
     let onClose: () -> Void
 
     @Environment(SubscriptionStore.self) private var store
+    @Environment(\.openURL) private var openURL
     @AppStorage("hasSeenSpecialOffer") private var hasSeenSpecialOffer = false
 
     private enum PaywallAlert: Identifiable {
-        case restored(Bool), failed(String), legal(String)
+        case restored(Bool), failed(String)
 
         var id: String {
             switch self {
             case .restored: "restored"
             case .failed(let message): message
-            case .legal(let title): title
             }
         }
     }
@@ -241,8 +241,6 @@ struct TrialOfferScreen: View {
                     : Alert(title: Text("No purchases to restore"), message: Text("There are no previous purchases on this Apple Account."))
             case .failed(let message):
                 Alert(title: Text("Something went wrong"), message: Text(message))
-            case .legal(let title):
-                Alert(title: Text(title), message: Text("Motiva’s legal documents haven’t been added yet."))
             }
         }
         .task {
@@ -374,9 +372,9 @@ struct TrialOfferScreen: View {
             HStack {
                 Button("Restore", action: restore)
                 Spacer()
-                Button("Terms & Conditions") { alert = .legal("Terms & Conditions") }
+                Button("Terms & Conditions") { openURL(LegalLinks.terms) }
                 Spacer()
-                Button("Privacy Policy") { alert = .legal("Privacy Policy") }
+                Button("Privacy Policy") { openURL(LegalLinks.privacy) }
             }
             .font(.system(size: 12))
             .buttonStyle(.quiet(.motivaForeground))

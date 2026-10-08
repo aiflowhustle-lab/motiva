@@ -3,7 +3,8 @@ import SwiftUI
 struct IntroScreen: View {
     let step: OnboardingStep
     let onContinue: () -> Void
-    let onLegal: (String) -> Void
+
+    @Environment(\.openURL) private var openURL
 
     private var title: String {
         switch step {
@@ -57,9 +58,9 @@ struct IntroScreen: View {
     private var legalCopy: some View {
         var text = AttributedString("By continuing you agree to our ")
         var terms = AttributedString("Terms")
-        terms.link = URL(string: "motiva-legal://terms")
+        terms.link = LegalLinks.terms
         var privacy = AttributedString("Privacy Policy")
-        privacy.link = URL(string: "motiva-legal://privacy")
+        privacy.link = LegalLinks.privacy
         terms.font = .system(size: 12, weight: .semibold)
         terms.underlineStyle = .single
         privacy.font = .system(size: 12, weight: .semibold)
@@ -73,10 +74,6 @@ struct IntroScreen: View {
             .foregroundStyle(Color.motivaMuted)
             .tint(Color.motivaMuted)
             .multilineTextAlignment(.center)
-            .environment(\.openURL, OpenURLAction { url in
-                onLegal(url.host == "terms" ? "Terms" : "Privacy Policy")
-                return .handled
-            })
     }
 }
 

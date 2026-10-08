@@ -198,11 +198,21 @@ struct ReminderSettingsView: View {
 
 struct SettingsView: View {
     @Environment(AppState.self) private var app
+    @Environment(SubscriptionStore.self) private var store
+    @Environment(\.openURL) private var openURL
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @State private var notice: String?
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private var settingsNoticeMessage: String {
+        switch notice {
+        case "Purchases restored": "Motiva Premium is active again."
+        case "No purchases to restore": "There are no previous purchases on this Apple Account."
+        default: notice ?? ""
+        }
     }
 
     var body: some View {
@@ -211,9 +221,17 @@ struct SettingsView: View {
                 NavigationLink("Reminders", value: ProfileDestination.reminders)
             }
             Section {
-                Button("Restore purchases") { notice = "No purchases to restore" }
-                Button("Terms & Conditions") { notice = "Terms & Conditions" }
-                Button("Privacy Policy") { notice = "Privacy Policy" }
+                Button("Restore purchases") {
+                    Task {
+                        do {
+                            notice = try await store.restore() ? "Purchases restored" : "No purchases to restore"
+                        } catch {
+                            notice = error.localizedDescription
+                        }
+                    }
+                }
+                Button("Terms & Conditions") { openURL(LegalLinks.terms) }
+                Button("Privacy Policy") { openURL(LegalLinks.privacy) }
             }
             Section {
                 LabeledContent("Version", value: version)
@@ -233,7 +251,7 @@ struct SettingsView: View {
         .alert(notice ?? "", isPresented: Binding(get: { notice != nil }, set: { if !$0 { notice = nil } })) {
             Button("OK", role: .cancel) {}
         } message: {
-            Text(notice == "No purchases to restore" ? "There are no previous purchases on this account." : "Motiva’s legal documents haven’t been added yet.")
+            Text(settingsNoticeMessage)
         }
     }
 }

@@ -4,7 +4,6 @@ struct OnboardingView: View {
     var onFinish: (OnboardingProfile) -> Void
 
     @State private var model = OnboardingModel()
-    @State private var legalTitle: String?
 
     var body: some View {
         NavigationStack(path: $model.path) {
@@ -12,11 +11,7 @@ struct OnboardingView: View {
                 .navigationDestination(for: OnboardingStep.self, destination: page)
         }
         .preferredColorScheme(model.step.usesDarkBackground ? .dark : .light)
-        .alert(legalTitle ?? "", isPresented: Binding(get: { legalTitle != nil }, set: { if !$0 { legalTitle = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("Motiva’s legal documents haven’t been added yet.")
-        }    }
+    }
 
     private func page(_ step: OnboardingStep) -> some View {
         let dark = step.usesDarkBackground
@@ -62,7 +57,7 @@ struct OnboardingView: View {
         let next = { model.advance(from: step) }
         switch step {
         case .welcome, .customize, .achieve, .quotes:
-            IntroScreen(step: step, onContinue: next, onLegal: { legalTitle = $0 })
+            IntroScreen(step: step, onContinue: next)
         case .name:
             NameScreen(model: model)
         case .routine:
