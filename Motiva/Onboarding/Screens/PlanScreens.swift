@@ -161,7 +161,14 @@ struct TrialOfferScreen: View {
     }
 
     private var product: Product? { store.product(plan) }
+    /// Days of free trial this Apple ID can actually start.
     private var trialDays: Int? { store.freeTrial(for: plan)?.days }
+    /// Trial on the product in App Store Connect (e.g. 3 days on yearly).
+    private var configuredTrialDays: Int? { store.introTrialDays(for: plan) }
+    private var showsFreeTrialOffer: Bool { trialDays != nil }
+    private var trialUsedOnThisAccount: Bool {
+        plan != .monthly && configuredTrialDays != nil && trialDays == nil
+    }
 
     private var milestones: [Milestone] {
         let installed = Milestone(symbol: "checkmark.circle", title: "Install the app", description: "Set it up to match your goals", completed: true)
@@ -195,7 +202,7 @@ struct TrialOfferScreen: View {
 
             ScrollingScreen {
                 VStack(spacing: 0) {
-                    Text(trialDays == nil ? "Upgrade to Motiva Premium" : "Upgrade Motiva for free")
+                    Text(showsFreeTrialOffer ? "Upgrade Motiva for free" : "Upgrade to Motiva Premium")
                         .font(.system(size: 25, weight: .bold))
                         .multilineTextAlignment(.center)
                         .padding(.top, 10)
@@ -323,7 +330,7 @@ struct TrialOfferScreen: View {
             .reveal(appeared, delay: Reveal.plans)
             .padding(.bottom, 14)
 
-            if trialDays != nil {
+            if showsFreeTrialOffer {
                 Toggle("Reminder before trial ends", isOn: $trialReminder)
                     .font(.motivaBody)
                     .tint(Color.motivaPrimary)
@@ -372,7 +379,13 @@ struct TrialOfferScreen: View {
 
     private var buttonTitle: String {
         guard let product else { return "Loading…" }
-        return trialDays == nil ? "Subscribe" : "Try for \(Decimal.zero.formatted(product.priceFormatStyle))"
+        if showsFreeTrialOffer {
+            return "Try for \(Decimal.zero.formatted(product.priceFormatStyle))"
+        }
+        if trialUsedOnThisAccount {
+            return "Subscribe"
+        }
+        return "Subscribe"
     }
 
     private var savingsBadge: String? {
@@ -383,11 +396,18 @@ struct TrialOfferScreen: View {
 
     @ViewBuilder private var priceLine: some View {
         if let product {
-            switch (plan, trialDays) {
-            case (.monthly, _):
+            switch (plan, trialDays, trialUsedOnThisAccount) {
+            case (.monthly, _, _):
                 Text("Billed monthly at ") + Text("\(product.displayPrice)/month").fontWeight(.semibold) + Text(".\nCancel anytime.")
-            case (_, let days?):
+            case (_, let days?, _):
                 Text("\(days) days free, then \(product.monthlyEquivalent)/month,\nbilled yearly as ") + Text("\(product.displayPrice)/year").fontWeight(.semibold)
+            case (_, _, true):
+                VStack(spacing: 6) {
+                    (Text("\(product.monthlyEquivalent)/month, billed yearly as\n") + Text("\(product.displayPrice)/year").fontWeight(.semibold))
+                    Text("Free trial already used on this Apple ID.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.motivaMuted)
+                }
             default:
                 Text("\(product.monthlyEquivalent)/month, billed yearly as\n") + Text("\(product.displayPrice)/year").fontWeight(.semibold)
             }

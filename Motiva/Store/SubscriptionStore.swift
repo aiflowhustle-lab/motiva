@@ -61,6 +61,13 @@ final class SubscriptionStore: NSObject {
         return offer.period
     }
 
+    /// Trial length configured in App Store Connect (for display), even if this Apple ID already used it.
+    func introTrialDays(for plan: SubscriptionPlan) -> Int? {
+        guard let offer = products[plan]?.subscription?.introductoryOffer,
+              offer.paymentMode == .freeTrial else { return nil }
+        return offer.period.days
+    }
+
     func load() async {
         if !configured {
             Purchases.shared.delegate = self

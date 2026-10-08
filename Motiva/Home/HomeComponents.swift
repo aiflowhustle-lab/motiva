@@ -91,6 +91,7 @@ struct UnlockBanner: View {
 
 struct PaywallView: View {
     var onClose: () -> Void
+    @Environment(SubscriptionStore.self) private var store
     @State private var trialReminder = false
 
     var body: some View {
@@ -99,6 +100,10 @@ struct PaywallView: View {
             .foregroundStyle(Color.motivaForeground)
             .background(Color.motivaBackground.ignoresSafeArea())
             .environment(\.colorScheme, .light)
+            .task {
+                await store.refreshEntitlements()
+                if store.isPremium { onClose() }
+            }
     }
 }
 

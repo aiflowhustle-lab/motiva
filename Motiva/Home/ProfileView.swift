@@ -19,7 +19,7 @@ struct ProfileView: View {
     var body: some View {
         SheetPage(title: "Profile") {
             VStack(spacing: 0) {
-                UnlockBanner()
+                MembershipStatusCard()
                     .padding(.top, 8)
 
                 VStack(alignment: .leading, spacing: 16) {
