@@ -200,7 +200,9 @@ struct TrialOfferScreen: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .reveal(appeared, delay: Reveal.close)
 
-            ScrollingScreen {
+            Spacer(minLength: 0)
+
+            ScrollView {
                 VStack(spacing: 0) {
                     Text(showsFreeTrialOffer ? "Upgrade Motiva for free" : "Upgrade to Motiva Premium")
                         .font(.system(size: 25, weight: .bold))
@@ -213,12 +215,17 @@ struct TrialOfferScreen: View {
                             timelineRow(milestone, index: index, isLast: index == milestones.count - 1)
                         }
                     }
-                    .padding(.top, 50)
-                    .padding(.bottom, 20)
+                    .padding(.top, 28)
+                    .padding(.bottom, 12)
                 }
-            } footer: {
-                footer
+                .frame(maxWidth: .infinity)
             }
+            .scrollIndicators(.hidden)
+            .scrollBounceBehavior(.basedOnSize)
+
+            footer
+                .padding(.top, 16)
+                .padding(.bottom, 8)
         }
         .animation(.easeInOut(duration: 0.25), value: plan)
         .onAppear { appeared = true }
