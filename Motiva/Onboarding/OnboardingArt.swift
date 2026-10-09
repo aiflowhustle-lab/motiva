@@ -179,46 +179,108 @@ struct StreakPreview: View {
     }
 }
 
+/// Phone-top silhouette with stacked iOS-style notification previews (Lovable reference design).
 struct NotificationArt: View {
-    private struct Card: View {
-        var body: some View {
-            HStack(spacing: 10) {
-                Text("”")
-                    .font(.system(size: 30, weight: .heavy))
-                    .frame(width: 25, height: 25)
-                    .offset(y: 6)
-                    .clipped()
-                    .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.motivaForeground, lineWidth: 1))
-                VStack(alignment: .leading, spacing: 6) {
-                    GeometryReader { proxy in
-                        VStack(alignment: .leading, spacing: 6) {
-                            Rectangle().frame(width: proxy.size.width * 0.8, height: 2)
-                            Rectangle().frame(width: proxy.size.width * 0.4, height: 1).opacity(0.6)
-                        }
-                    }
-                    .frame(height: 9)
-                }
-                Rectangle().fill(Color.motivaMuted).frame(width: 15, height: 1)
-            }
-            .padding(11)
-            .frame(height: 57)
-            .background(Color.motivaBackground, in: RoundedRectangle(cornerRadius: 19, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 19, style: .continuous).stroke(Color.motivaForeground, lineWidth: 2))
-            .artShadow()
-        }
+    private struct Item: Identifiable {
+        let time: String
+        let title: String
+        let message: String
+        var id: String { time }
     }
 
+    private let hero = Item(time: "now", title: "Motiva", message: "Small steps are still steps forward.")
+    private let past = [
+        Item(time: "Yesterday", title: "Motiva", message: "Your peace is worth protecting."),
+        Item(time: "Tuesday", title: "Motiva", message: "Make room for the person you are becoming."),
+    ]
+
     var body: some View {
-        ZStack(alignment: .topLeading) {
-            Card().opacity(0.4).blur(radius: 3).offset(x: -5, y: 39)
-            Card().offset(y: 77)
+        ZStack(alignment: .top) {
+            UnevenRoundedRectangle(
+                topLeadingRadius: 100,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 82,
+                style: .continuous
+            )
+                .fill(Color.motivaForeground)
+                .frame(width: 290, height: 316)
+                .rotationEffect(.degrees(0.4))
+                .overlay(alignment: .top) {
+                    Capsule()
+                        .fill(Color.motivaBackground)
+                        .frame(width: 44, height: 3)
+                        .padding(.top, 15)
+                }
+                .mask {
+                    LinearGradient(
+                        colors: [.black, .black, .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+
+            VStack(spacing: 19) {
+                notificationCard(hero, prominent: true)
+                    .padding(.top, 64)
+
+                VStack(spacing: 19) {
+                    ForEach(past) { item in
+                        notificationCard(item, prominent: false)
+                    }
+                }
+                .frame(width: 248)
+            }
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: 290, alignment: .topLeading)
-        .frame(height: 165, alignment: .top)
-        .padding(.top, 14)
-        .padding(.bottom, 9)
-        .accessibilityElement()
-        .accessibilityLabel("Daily quote notification previews")
+        .frame(height: 316)
+        .padding(.top, 8)
+        .padding(.bottom, 4)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Daily Motiva notification previews")
+    }
+
+    private func notificationCard(_ item: Item, prominent: Bool) -> some View {
+        let iconSize: CGFloat = prominent ? 43 : 32
+        let corner: CGFloat = prominent ? 10 : 8
+        return HStack(alignment: .top, spacing: prominent ? 9 : 7) {
+            appIcon(size: iconSize)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.title)
+                    .font(.system(size: prominent ? 14 : 10, weight: .semibold))
+                    .lineLimit(1)
+                Text(item.message)
+                    .font(.system(size: prominent ? 14 : 10))
+                    .foregroundStyle(Color.motivaForeground)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, prominent ? 11 : 8)
+        .padding(.vertical, prominent ? 15 : 12)
+        .frame(maxWidth: prominent ? 331 : .infinity, minHeight: prominent ? 74 : 56, alignment: .leading)
+        .background(Color.white, in: RoundedRectangle(cornerRadius: corner, style: .continuous))
+        .overlay(alignment: .topTrailing) {
+            Text(item.time)
+                .font(.system(size: prominent ? 13 : 10))
+                .foregroundStyle(Color(hex: 0x7D7D7D))
+                .padding(.top, prominent ? 7 : 5)
+                .padding(.trailing, prominent ? 14 : 10)
+        }
+        .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
+    }
+
+    private func appIcon(size: CGFloat) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
+                .fill(Color.motivaPrimary)
+            Image(systemName: "quote.opening")
+                .font(.system(size: size * 0.38, weight: .semibold))
+                .foregroundStyle(.white)
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
     }
 }
 
