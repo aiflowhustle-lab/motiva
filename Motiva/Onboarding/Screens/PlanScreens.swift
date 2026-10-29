@@ -1,45 +1,118 @@
 import StoreKit
 import SwiftUI
 
+struct CurrentGoalsScreen: View {
+    @Bindable var model: OnboardingModel
+    @FocusState private var focused: Bool
+
+    private let limit = 250
+
+    private var trimmed: String {
+        model.writtenGoals.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text("What are your goals\nright now?")
+                .titleStyle()
+                .padding(.top, 15)
+                .padding(.bottom, 24)
+
+            ZStack(alignment: .topLeading) {
+                RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous)
+                    .fill(Color.motivaInput)
+
+                if model.writtenGoals.isEmpty {
+                    Text("I want to...")
+                        .font(.motivaBody)
+                        .foregroundStyle(Color.motivaMuted)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 18)
+                        .allowsHitTesting(false)
+                }
+
+                TextEditor(text: $model.writtenGoals)
+                    .font(.motivaBody)
+                    .scrollContentBackground(.hidden)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
+                    .focused($focused)
+                    .onChange(of: model.writtenGoals) { _, value in
+                        if value.count > limit {
+                            model.writtenGoals = String(value.prefix(limit))
+                        }
+                    }
+            }
+            .frame(height: 200)
+
+            Text("\(model.writtenGoals.count)/\(limit)")
+                .font(.system(size: 13))
+                .foregroundStyle(Color.motivaMuted)
+                .frame(maxWidth: .infinity, alignment: .trailing)
+                .padding(.top, 8)
+
+            Spacer(minLength: 16)
+
+            Button("Save goals") { model.advance(from: .currentGoals) }
+                .buttonStyle(.primary)
+                .disabled(trimmed.isEmpty)
+                .opacity(trimmed.isEmpty ? 0.45 : 1)
+                .padding(.bottom, 8)
+        }
+        .task {
+            try? await Task.sleep(for: .milliseconds(450))
+            focused = true
+        }
+    }
+}
+
 struct TopicsScreen: View {
     let model: OnboardingModel
 
     var body: some View {
-        ScrollingScreen {
+        VStack(spacing: 0) {
             VStack(spacing: 0) {
                 Text("Which topics do you\nwant to follow?")
                     .titleStyle()
                     .padding(.top, 15)
-                    .padding(.bottom, 31)
+                    .padding(.bottom, 28)
 
-                FlowLayout(spacing: 14) {
+                FlowLayout(spacing: 10, rowSpacing: 20) {
                     ForEach(OnboardingContent.topics, id: \.self) { topic in
                         let selected = model.selected(topic, in: .topics)
                         Button {
                             model.toggle(topic, in: .topics)
                         } label: {
-                            HStack(spacing: 14) {
+                            HStack(spacing: 8) {
                                 Image(systemName: selected ? "checkmark" : "plus")
-                                    .font(.system(size: 16, weight: .medium))
+                                    .font(.system(size: 14, weight: .semibold))
                                 Text(topic)
                             }
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 16)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 14)
                         }
-                        .buttonStyle(ChoiceButtonStyle(selected: selected))
+                        .buttonStyle(TopicChipButtonStyle(selected: selected))
                         .accessibilityAddTraits(selected ? .isSelected : [])
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .sensoryFeedback(.selection, trigger: model.selections[.topics, default: []].count)
-        } footer: {
-            VStack(spacing: 14) {
+            .onAppear {
+                if model.selections[.topics]?.isEmpty != false {
+                    model.selections[.topics] = ["Motivation"]
+                }
+            }
+
+            VStack(spacing: 10) {
                 Text("Try it for free")
-                    .font(.system(size: 16))
+                    .font(.system(size: 15))
                     .foregroundStyle(Color.motivaMuted)
                 Button("Continue") { model.advance(from: .topics) }.buttonStyle(.primary)
             }
+            .padding(.top, 16)
+            .padding(.bottom, 8)
         }
     }
 }
@@ -75,6 +148,9 @@ struct PlanScreen: View {
                     .padding(.bottom, 30)
 
                 VStack(alignment: .leading, spacing: 32) {
+                    if !model.writtenGoals.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        row("pencil.line", title: "Your goals right now", value: model.writtenGoals.trimmingCharacters(in: .whitespacesAndNewlines))
+                    }
                     row("target", title: "What you want to achieve", value: Self.listText(model.selections[.goals] ?? [], fallback: "Find happiness"))
                     row("square.grid.2x2", title: "Topics of interest", value: Self.listText(model.selections[.topics] ?? [], fallback: "Motivation"))
                     row("bell", title: "Your reminders", value: remindersText)
@@ -636,31 +712,99 @@ private struct ShineSweep: View {
 struct WidgetScreen: View {
     let onContinue: () -> Void
 
+    @State private var showsInstallSheet = false
+
     var body: some View {
-        VStack(spacing: 0) {
-            Text("Add a free widget to your\nHome Screen")
-                .titleStyle()
-                .padding(.top, 60)
+        ZStack {
+            LinearGradient(
+                stops: [
+                    .init(color: .motivaBackground, location: 0),
+                    .init(color: .motivaBackground, location: 0.72),
+                    .init(color: .motivaWidgetBottom, location: 1),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
-            Text("On your phone’s Home Screen, touch and hold an empty area, then tap Edit")
-                .font(.motivaBody)
-                .multilineTextAlignment(.center)
-                .lineSpacing(3)
-                .padding(.top, 23)
+            VStack(spacing: 0) {
+                Text("Add a free widget to your\nHome Screen")
+                    .titleStyle()
+                    .padding(.top, 52)
 
-            WidgetArt()
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .padding(.horizontal, 20)
-                .padding(.top, 40)
-                .padding(.bottom, 28)
+                Text("On your phone’s Home Screen, touch and\nhold an empty area, then tap Edit")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+                    .padding(.top, 22)
+                    .padding(.horizontal, 4)
 
-            VStack(spacing: 27) {
-                Button("Install widget", action: onContinue).buttonStyle(.primary)
-                Button("Remind me later", action: onContinue)
-                    .font(.system(size: 18, weight: .bold))
-                    .buttonStyle(.quiet(.motivaForeground))
+                WidgetArt()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                    .padding(.horizontal, 32)
+                    .padding(.top, 28)
+                    .padding(.bottom, 16)
+
+                VStack(spacing: 19) {
+                    Button("Install widget") { showsInstallSheet = true }.buttonStyle(.primary)
+                    Button("Remind me later", action: onContinue)
+                        .font(.system(size: 18, weight: .bold))
+                        .buttonStyle(.quiet(.motivaForeground))
+                }
+                .padding(.bottom, 16)
             }
-            .padding(.bottom, 16)
         }
+        .sheet(isPresented: $showsInstallSheet) {
+            WidgetInstallSheet {
+                showsInstallSheet = false
+                onContinue()
+            }
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(22)
+        }
+    }
+}
+
+private struct WidgetInstallSheet: View {
+    let onDone: () -> Void
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Add your widget")
+                    .font(.motivaTitle)
+                    .padding(.bottom, 14)
+
+                Text("On your iPhone, touch and hold an empty area on the Home Screen.")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .lineSpacing(4)
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("1. Tap **Edit**, then **Add Widget**.")
+                    Text("2. Find Motiva and choose a widget.")
+                    Text("3. Tap **Add Widget**, then **Done**.")
+                }
+                .font(.system(size: 16))
+                .foregroundStyle(Color.motivaWelcomeSubtitle)
+                .lineSpacing(4)
+                .padding(.top, 16)
+
+                Text("Widgets are added from the Home Screen on your iPhone — not from this button alone.")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .padding(.top, 16)
+                    .padding(.bottom, 24)
+
+                Button("Got it", action: onDone).buttonStyle(.primary)
+            }
+            .padding(.horizontal, 25)
+            .padding(.top, 8)
+            .padding(.bottom, 24)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(Color.motivaWidgetBottom)
     }
 }

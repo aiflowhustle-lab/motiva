@@ -1,9 +1,18 @@
 import SwiftUI
 
 struct OnboardingView: View {
+    var isPreview = false
+    var startAt: OnboardingStep? = nil
     var onFinish: (OnboardingProfile) -> Void
 
-    @State private var model = OnboardingModel()
+    @State private var model: OnboardingModel
+
+    init(isPreview: Bool = false, startAt: OnboardingStep? = nil, onFinish: @escaping (OnboardingProfile) -> Void) {
+        self.isPreview = isPreview
+        self.startAt = startAt
+        self.onFinish = onFinish
+        _model = State(initialValue: OnboardingModel(startAt: startAt))
+    }
 
     var body: some View {
         NavigationStack(path: $model.path) {
@@ -11,6 +20,21 @@ struct OnboardingView: View {
                 .navigationDestination(for: OnboardingStep.self, destination: page)
         }
         .preferredColorScheme(model.step.usesDarkBackground ? .dark : .light)
+        .overlay(alignment: .topTrailing) {
+            if isPreview {
+                Button {
+                    onFinish(model.makeProfile())
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 18, weight: .medium))
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.quiet(.motivaForeground))
+                .accessibilityLabel("Close preview")
+                .padding(.trailing, Metrics.screenPadding - 8)
+                .padding(.top, 4)
+            }
+        }
     }
 
     private func page(_ step: OnboardingStep) -> some View {
@@ -56,7 +80,7 @@ struct OnboardingView: View {
     private func screen(for step: OnboardingStep) -> some View {
         let next = { model.advance(from: step) }
         switch step {
-        case .welcome, .customize, .achieve, .quotes:
+        case .welcome, .quotes:
             IntroScreen(step: step, onContinue: next)
         case .name:
             NameScreen(model: model)
@@ -66,6 +90,8 @@ struct OnboardingView: View {
             RemindersScreen(model: model)
         case .meant, .phone, .freeTrial, .trial:
             StatementScreen(step: step, name: model.trimmedName, onContinue: next)
+        case .currentGoals:
+            CurrentGoalsScreen(model: model)
         case .topics:
             TopicsScreen(model: model)
         case .plan:

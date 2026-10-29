@@ -2,50 +2,42 @@ import Testing
 @testable import Motiva
 
 struct OnboardingFlowTests {
-    @Test func welcomeAdvancesToReferral() {
+    @Test func welcomeAdvancesToAge() {
         let model = OnboardingModel()
         model.advance(from: .welcome)
-        #expect(model.step == .referral)
+        #expect(model.step == .age)
     }
 
-    @Test(arguments: [
-        ("Yes", OnboardingStep.beliefs),
-        ("No", OnboardingStep.zodiac),
-        ("Spiritual but not religious", OnboardingStep.zodiac),
-    ])
-    func religionBranches(answer: String, expected: OnboardingStep) {
+    @Test func relationshipAdvancesToSources() {
         let model = OnboardingModel()
-        model.path = [.religion]
-        model.pick(answer, in: .religion)
-        model.advance(from: .religion)
-        #expect(model.step == expected)
-    }
-
-    @Test func skippingReligionGoesToZodiac() {
-        let model = OnboardingModel()
-        model.path = [.religion]
-        model.advance(from: .religion)
-        #expect(model.step == .zodiac)
+        model.path = [.relationship]
+        model.advance(from: .relationship)
+        #expect(model.step == .sources)
     }
 
     @Test func advancingFromAScreenThatIsNoLongerVisibleIsIgnored() {
         let model = OnboardingModel()
         model.advance(from: .welcome)
         model.advance(from: .welcome)
-        #expect(model.path == [.referral])
+        #expect(model.path == [.age])
     }
 
     @Test func backReturnsToThePreviousScreen() {
         let model = OnboardingModel()
         model.advance(from: .welcome)
-        model.advance(from: .referral)
+        model.advance(from: .age)
         model.back()
-        #expect(model.step == .referral)
+        #expect(model.step == .age)
+    }
+
+    @Test func startAtJumpsDirectlyToAStep() {
+        let model = OnboardingModel(startAt: .reminders)
+        #expect(model.path == [.reminders])
+        #expect(OnboardingModel(startAt: .welcome).path.isEmpty)
     }
 
     @Test func walkingTheWholeFlowEndsOnWidgetAndVisitsEveryScreenOnce() {
         let model = OnboardingModel()
-        model.pick("Yes", in: .religion)
         var visited = [model.step]
         while model.step != .widget {
             model.advance(from: model.step)
@@ -72,12 +64,12 @@ struct OnboardingFlowTests {
 
     @Test func everyQuestionStepHasContent() {
         let questionSteps: [OnboardingStep] = [
-            .referral, .age, .gender, .relationship, .religion, .beliefs, .zodiac, .sources, .consistency, .push, .habit,
+            .age, .gender, .relationship, .sources, .consistency, .push, .habit,
             .quoteStyle, .quoteAction, .mental, .vision, .rewires, .mood, .moodReason, .confront, .improve, .goals,
         ]
         for step in questionSteps {
             #expect(OnboardingContent.questions[step]?.options.isEmpty == false, "\(step) has no options")
         }
-        #expect(OnboardingContent.zodiacSymbols.count == OnboardingContent.questions[.zodiac]?.options.count)
+        #expect(Set(OnboardingContent.questions.keys) == Set(questionSteps))
     }
 }

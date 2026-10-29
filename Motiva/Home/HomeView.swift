@@ -82,6 +82,9 @@ struct HomeView: View {
         }
         .onChange(of: page) { app.visit(currentQuote) }
         .onChange(of: app.topic) { page = 0 }
+        .onChange(of: app.theme) { _, _ in
+            WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
+        }
     }
 
     private var feed: some View {

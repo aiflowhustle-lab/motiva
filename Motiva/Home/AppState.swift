@@ -99,8 +99,8 @@ final class AppState {
     var favorites: [String] { didSet { save() } }
     var ownQuotes: [String] { didSet { save() } }
     private(set) var history: [String] { didSet { save() } }
-    var theme: FeedTheme { didSet { save() } }
-    var topic: String? { didSet { save() } }
+    var theme: FeedTheme { didSet { save(); syncWidgetFeed() } }
+    var topic: String? { didSet { save(); syncWidgetFeed() } }
     private(set) var streakCount: Int { didSet { save() } }
     private(set) var streakDay: CalendarDay? { didSet { save() } }
     var reminders: ReminderSettings { didSet { save() } }
@@ -188,5 +188,9 @@ final class AppState {
         stored.reminders = reminders
         guard let data = try? JSONEncoder().encode(stored) else { return }
         defaults.set(data, forKey: Self.storageKey)
+    }
+
+    private func syncWidgetFeed() {
+        WidgetQuoteSync.refresh(topic: topic, theme: theme)
     }
 }

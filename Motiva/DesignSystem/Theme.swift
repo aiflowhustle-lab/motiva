@@ -16,6 +16,11 @@ extension Color {
     static let motivaPrimary = Color(hex: 0x171717)
     static let motivaCard = Color.white
     static let motivaMuted = Color(hex: 0x878787)
+    static let motivaWelcomeMuted = Color(hex: 0x6B6B67)
+    static let motivaWelcomeSubtitle = Color(hex: 0x4A4A47)
+    static let motivaWelcomeGhost = Color(hex: 0xFBFBFA)
+    static let motivaWidgetBottom = Color(hex: 0xFBFBFB)
+    static let motivaAppOutline = Color(hex: 0x999999)
     static let motivaBorder = Color(hex: 0xDBDBDB)
     static let motivaInput = Color(hex: 0xE8E8E8)
     static let motivaDark = Color(hex: 0x070707)
@@ -32,8 +37,19 @@ enum Metrics {
     static let buttonHeight: CGFloat = 59
 }
 
+enum MotivaFont {
+    static let bricolageExtraBold = "BricolageGrotesque-ExtraBold"
+    static let bricolageBold = "BricolageGrotesque-Bold"
+    static let bricolageSemiBold = "BricolageGrotesque-SemiBold"
+    static let bricolageRegular = "BricolageGrotesque-Regular"
+    static let instrumentSerifRegular = "InstrumentSerif-Regular"
+}
+
 extension Font {
-    static let motivaTitle = Font.system(size: 26, weight: .bold)
+    /// Onboarding question titles and welcome headline (Bricolage Grotesque).
+    static let motivaTitle = Font.custom(MotivaFont.bricolageBold, size: 26)
+    static let motivaWelcomeHeadline = Font.custom(MotivaFont.bricolageExtraBold, size: 40)
+    static let motivaWelcomeWordmark = Font.custom(MotivaFont.bricolageExtraBold, size: 22)
     static let motivaBody = Font.system(size: 18)
     static let motivaChoice = Font.system(size: 21)
 }
@@ -129,6 +145,24 @@ struct ChoiceButtonStyle: ButtonStyle {
             )
             .scaleEffect(configuration.isPressed ? 0.99 : 1)
             .contentShape(RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous))
+            .pressHaptic(.selection, isPressed: configuration.isPressed)
+    }
+}
+
+/// Compact chips for onboarding topic pickers (fits all options without scrolling).
+struct TopicChipButtonStyle: ButtonStyle {
+    var selected = false
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 17))
+            .foregroundStyle(selected ? .white : Color.motivaForeground)
+            .background(
+                selected ? Color.motivaPrimary : (configuration.isPressed ? Color.motivaInput : Color.motivaCard),
+                in: RoundedRectangle(cornerRadius: 15, style: .continuous)
+            )
+            .scaleEffect(configuration.isPressed ? 0.99 : 1)
+            .contentShape(RoundedRectangle(cornerRadius: 15, style: .continuous))
             .pressHaptic(.selection, isPressed: configuration.isPressed)
     }
 }

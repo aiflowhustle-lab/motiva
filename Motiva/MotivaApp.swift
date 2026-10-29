@@ -23,12 +23,18 @@ struct MotivaApp: App {
                         Task {
                             await ReminderScheduler.schedule(app.reminders, quotes: QuoteLibrary.forYou.shuffled())
                         }
+                        WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
                     }
                 }
             }
             .environment(app)
             .environment(store)
-            .task { await store.load() }
+            .task {
+                await store.load()
+                if hasCompletedOnboarding {
+                    WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
+                }
+            }
         }
     }
 }

@@ -4,31 +4,35 @@ struct IntroScreen: View {
     let step: OnboardingStep
     let onContinue: () -> Void
 
-    @Environment(\.openURL) private var openURL
+    @State private var typed = false
 
     private var title: String {
         switch step {
-        case .welcome: "Get motivation throughout\nthe day"
-        case .customize: "Customize the app to\nimprove your experience"
-        case .achieve: "Customize the app to what you want to achieve"
-        default: "Answer a few questions to\nget personalized quotes"
+        case .welcome: "Get motivation\nthroughout the day"
+        default: "Answer a few\nquestions to get\npersonalized quotes"
         }
     }
 
     var body: some View {
+        if step == .welcome {
+            welcomeLayout
+        } else {
+            typedIntroLayout
+        }
+    }
+
+    private var welcomeLayout: some View {
         VStack(spacing: 0) {
-            art
+            QuoteMarkArt()
                 .frame(maxWidth: .infinity, minHeight: 190, maxHeight: .infinity)
                 .padding(.top, 34)
 
             VStack(spacing: 18) {
                 Text(title).titleStyle()
-                if step == .welcome {
-                    Text("Inspiration to think positively, stay\nconsistent, and focus on your growth")
-                        .font(.motivaBody)
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(3)
-                }
+                Text("Inspiration to think positively, stay\nconsistent, and focus on your growth")
+                    .font(.motivaBody)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
             }
             .padding(.top, 35)
             .padding(.bottom, 20)
@@ -36,23 +40,32 @@ struct IntroScreen: View {
             VStack(spacing: 18) {
                 Spacer(minLength: 40)
                 Button("Continue", action: onContinue).buttonStyle(.primary)
-                if step == .welcome {
-                    legalCopy
-                }
+                legalCopy
             }
             .frame(maxHeight: .infinity)
             .padding(.bottom, 8)
         }
     }
 
-    @ViewBuilder
-    private var art: some View {
-        switch step {
-        case .welcome: QuoteMarkArt()
-        case .achieve: TargetArt()
-        case .quotes: OrbitArt()
-        default: CompassArt()
+    private var typedIntroLayout: some View {
+        VStack(spacing: 0) {
+            Spacer()
+            TypewriterText(text: title, isComplete: $typed)
+                .titleStyle()
+                .frame(maxWidth: 302)
+            Spacer()
+            Button("Continue", action: onContinue)
+                .buttonStyle(.primary)
+                .padding(.bottom, 8)
+                .opacity(typed ? 1 : 0)
+                .offset(y: typed ? 0 : 12)
+                .allowsHitTesting(typed)
+                .animation(.easeOut(duration: 0.45), value: typed)
         }
+        .contentShape(Rectangle())
+        .onTapGesture { typed = true }
+        .accessibilityAction(named: "Show full text") { typed = true }
+        .sensoryFeedback(.impact(weight: .light), trigger: typed) { _, done in done }
     }
 
     private var legalCopy: some View {
@@ -154,11 +167,7 @@ struct RemindersScreen: View {
                 Text("Get quotes\nthroughout the day")
                     .titleStyle()
                     .padding(.top, 44)
-
-                Text("Small doses of motivation can make a big difference in your life")
-                    .font(.motivaBody)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 20)
+                    .padding(.bottom, 24)
 
                 NotificationArt()
 

@@ -24,11 +24,14 @@ struct ScrollingScreen<Content: View, Footer: View>: View {
 /// Lays out subviews left to right, wrapping onto new rows when they run out of width.
 struct FlowLayout: Layout {
     var spacing: CGFloat = 14
+    var rowSpacing: CGFloat?
+
+    private var verticalGap: CGFloat { rowSpacing ?? spacing }
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let rows = arrange(subviews, width: proposal.width ?? .infinity)
         let width = rows.map(\.width).max() ?? 0
-        let height = rows.map(\.height).reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0))
+        let height = rows.map(\.height).reduce(0, +) + verticalGap * CGFloat(max(rows.count - 1, 0))
         return CGSize(width: proposal.width ?? width, height: height)
     }
 
@@ -41,7 +44,7 @@ struct FlowLayout: Layout {
                 subviews[index].place(at: CGPoint(x: x, y: y), proposal: ProposedViewSize(size))
                 x += size.width + spacing
             }
-            y += row.height + spacing
+            y += row.height + verticalGap
         }
     }
 

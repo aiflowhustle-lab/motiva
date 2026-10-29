@@ -3,7 +3,7 @@ import Foundation
 /// What free users can use without Motiva Premium.
 enum PremiumAccess {
     static let freeThemes: Set<FeedTheme> = [.classic]
-    static let freeTopicNames: Set<String> = ["Feeling sassy", "Self-respect", "Motivation"]
+    static let freeTopicNames: Set<String> = ["Feeling sassy", "Self-esteem", "Motivation"]
 
     static func canUse(theme: FeedTheme, isPremium: Bool) -> Bool {
         isPremium || freeThemes.contains(theme)

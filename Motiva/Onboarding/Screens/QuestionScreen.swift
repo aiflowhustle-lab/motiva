@@ -43,7 +43,7 @@ struct QuestionScreen: View {
                 .titleStyle()
                 .frame(minHeight: 34)
                 .padding(.top, 15)
-                .padding(.bottom, question.subtitle != nil ? 15 : (step == .zodiac ? 46 : 31))
+                .padding(.bottom, question.subtitle != nil ? 15 : 31)
                 .staggeredReveal(appeared, delay: entrance(0.15))
 
             if let subtitle = question.subtitle {
@@ -115,12 +115,6 @@ struct QuestionScreen: View {
 
     @ViewBuilder
     private func leadingIcon(index: Int) -> some View {
-        if step == .zodiac {
-            Text(OnboardingContent.zodiacSymbols[index])
-                .font(.custom("Arial", size: 34))
-                .frame(width: 33)
-                .accessibilityHidden(true)
-        }
         switch question.icons {
         case .mood:
             MouthIcon(kind: index)

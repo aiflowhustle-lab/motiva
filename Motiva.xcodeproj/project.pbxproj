@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		047C86FC30771E6C001027A0 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = AA0000000000000000000021 /* RevenueCat */; };
+		047C86FD30771E6C001027A1 /* MotivaWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000024 /* MotivaWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -18,11 +19,33 @@
 			remoteGlobalIDString = AA0000000000000000000006;
 			remoteInfo = Motiva;
 		};
+		AA0000000000000000000034 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000009 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000028;
+			remoteInfo = MotivaWidget;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		AA0000000000000000000031 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				047C86FD30771E6C001027A1 /* MotivaWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		AA0000000000000000000001 /* Motiva.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Motiva.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AA0000000000000000000010 /* MotivaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MotivaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA0000000000000000000024 /* MotivaWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = MotivaWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -34,6 +57,16 @@
 		AA0000000000000000000011 /* MotivaTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = MotivaTests;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000022 /* Shared */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		AA0000000000000000000023 /* MotivaWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MotivaWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -54,6 +87,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA000000000000000000002A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -61,6 +101,8 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000002 /* Motiva */,
+				AA0000000000000000000022 /* Shared */,
+				AA0000000000000000000023 /* MotivaWidget */,
 				AA0000000000000000000011 /* MotivaTests */,
 				AA0000000000000000000005 /* Products */,
 			);
@@ -70,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				AA0000000000000000000001 /* Motiva.app */,
+				AA0000000000000000000024 /* MotivaWidget.appex */,
 				AA0000000000000000000010 /* MotivaTests.xctest */,
 			);
 			name = Products;
@@ -85,13 +128,16 @@
 				AA0000000000000000000007 /* Sources */,
 				AA0000000000000000000003 /* Frameworks */,
 				AA0000000000000000000008 /* Resources */,
+				AA0000000000000000000031 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				AA0000000000000000000033 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				AA0000000000000000000002 /* Motiva */,
+				AA0000000000000000000022 /* Shared */,
 			);
 			name = Motiva;
 			packageProductDependencies = (
@@ -123,6 +169,29 @@
 			productName = MotivaTests;
 			productReference = AA0000000000000000000010 /* MotivaTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		AA0000000000000000000028 /* MotivaWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AA000000000000000000002D /* Build configuration list for PBXNativeTarget "MotivaWidget" */;
+			buildPhases = (
+				AA0000000000000000000029 /* Sources */,
+				AA000000000000000000002A /* Frameworks */,
+				AA000000000000000000002B /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				AA0000000000000000000022 /* Shared */,
+				AA0000000000000000000023 /* MotivaWidget */,
+			);
+			name = MotivaWidget;
+			packageProductDependencies = (
+			);
+			productName = MotivaWidget;
+			productReference = AA0000000000000000000024 /* MotivaWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -161,6 +230,7 @@
 			projectRoot = "";
 			targets = (
 				AA0000000000000000000006 /* Motiva */,
+				AA0000000000000000000028 /* MotivaWidget */,
 				AA0000000000000000000015 /* MotivaTests */,
 			);
 		};
@@ -175,6 +245,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		AA0000000000000000000014 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		AA000000000000000000002B /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -198,6 +275,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		AA0000000000000000000029 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -205,6 +289,11 @@
 			isa = PBXTargetDependency;
 			target = AA0000000000000000000006 /* Motiva */;
 			targetProxy = AA0000000000000000000019 /* PBXContainerItemProxy */;
+		};
+		AA0000000000000000000033 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = AA0000000000000000000028 /* MotivaWidget */;
+			targetProxy = AA0000000000000000000034 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -273,11 +362,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Motiva/Motiva.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = K2Q9PMD826;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Motiva-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Motiva;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -308,11 +399,13 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Motiva/Motiva.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = K2Q9PMD826;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/Motiva-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = Motiva;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -382,6 +475,64 @@
 			};
 			name = Release;
 		};
+		AA000000000000000000002F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MotivaWidget/MotivaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = K2Q9PMD826;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/MotivaWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Motiva;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.motiva.dailyquotes.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		AA0000000000000000000030 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = MotivaWidget/MotivaWidget.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = K2Q9PMD826;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/MotivaWidget-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Motiva;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.motiva.dailyquotes.widget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -408,6 +559,15 @@
 			buildConfigurations = (
 				AA0000000000000000000017 /* Debug */,
 				AA0000000000000000000018 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA000000000000000000002D /* Build configuration list for PBXNativeTarget "MotivaWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA000000000000000000002F /* Debug */,
+				AA0000000000000000000030 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

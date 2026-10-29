@@ -32,16 +32,32 @@ private struct ArtCanvas: View {
     }
 }
 
-struct QuoteMarkArt: View {
+/// App icon artwork (black tile + white mark), scaled to `size`.
+struct MotivaLogoMark: View {
+    var size: CGFloat = 100
+    /// Defaults to iOS app-icon proportion; notification previews use Lovable ratios (8pt @ 32, 10pt @ 43).
+    var cornerRadius: CGFloat?
+
     var body: some View {
-        SVGShape(
-            "M31 12C15 12 9 23 10 35c1 13 10 19 24 20 9 1 6 15-12 39-5 7-2 13 5 13 6 0 13-10 19-20 15-26 20-49 12-64-5-9-14-11-27-11Zm61 0C76 12 70 23 71 35c1 13 10 19 24 20 9 1 6 15-12 39-5 7-2 13 5 13 6 0 13-10 19-20 15-26 20-49 12-64-5-9-14-11-27-11Z",
-            viewBox: CGSize(width: 120, height: 110)
-        )
-        .fill(Color.motivaForeground)
-        .frame(width: 100, height: 100)
-        .artShadow()
-        .accessibilityLabel("Quotation marks")
+        Image("MotivaLogo")
+            .resizable()
+            .interpolation(.high)
+            .aspectRatio(contentMode: .fill)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius ?? size * 0.223, style: .continuous))
+    }
+}
+
+struct QuoteMarkArt: View {
+    var size: CGFloat = 170
+
+    var body: some View {
+        Image("MotivaLogoTransparent")
+            .resizable()
+            .interpolation(.high)
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .accessibilityLabel("Motiva")
     }
 }
 
@@ -188,11 +204,13 @@ struct NotificationArt: View {
         var id: String { time }
     }
 
-    private let hero = Item(time: "now", title: "Motiva", message: "Small steps are still steps forward.")
-    private let past = [
+    private let items: [Item] = [
+        Item(time: "now", title: "Motiva", message: "Small steps are still steps forward."),
         Item(time: "Yesterday", title: "Motiva", message: "Your peace is worth protecting."),
         Item(time: "Tuesday", title: "Motiva", message: "Make room for the person you are becoming."),
     ]
+
+    @State private var revealedCount = 1
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -221,15 +239,15 @@ struct NotificationArt: View {
                 }
 
             VStack(spacing: 19) {
-                notificationCard(hero, prominent: true)
-                    .padding(.top, 64)
-
-                VStack(spacing: 19) {
-                    ForEach(past) { item in
-                        notificationCard(item, prominent: false)
-                    }
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    notificationCard(item, prominent: index == 0)
+                        .frame(maxWidth: index == 0 ? 331 : 248)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, index == 0 ? 64 : 0)
+                        .opacity(revealedCount > index ? 1 : 0)
+                        .scaleEffect(revealedCount > index ? 1 : 0.9, anchor: .top)
+                        .offset(y: revealedCount > index ? 0 : 18)
                 }
-                .frame(width: 248)
             }
             .frame(maxWidth: .infinity)
         }
@@ -238,13 +256,27 @@ struct NotificationArt: View {
         .padding(.bottom, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Daily Motiva notification previews")
+        .onAppear { runPopInSequence() }
+    }
+
+    private func runPopInSequence() {
+        revealedCount = 1
+        guard items.count > 1 else { return }
+        for index in 1..<items.count {
+            let delay = 0.4 + Double(index - 1) * 0.55
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                withAnimation(.spring(response: 0.72, dampingFraction: 0.78)) {
+                    revealedCount = index + 1
+                }
+            }
+        }
     }
 
     private func notificationCard(_ item: Item, prominent: Bool) -> some View {
         let iconSize: CGFloat = prominent ? 43 : 32
         let corner: CGFloat = prominent ? 10 : 8
         return HStack(alignment: .top, spacing: prominent ? 9 : 7) {
-            appIcon(size: iconSize)
+            appIcon(size: iconSize, prominent: prominent)
             VStack(alignment: .leading, spacing: 2) {
                 Text(item.title)
                     .font(.system(size: prominent ? 14 : 10, weight: .semibold))
@@ -271,39 +303,90 @@ struct NotificationArt: View {
         .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
     }
 
-    private func appIcon(size: CGFloat) -> some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: size * 0.22, style: .continuous)
-                .fill(Color.motivaPrimary)
-            Image(systemName: "quote.opening")
-                .font(.system(size: size * 0.38, weight: .semibold))
-                .foregroundStyle(.white)
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+    private func appIcon(size: CGFloat, prominent: Bool) -> some View {
+        let corner = size * (prominent ? 10 / 43 : 8 / 32)
+        return MotivaLogoMark(size: size, cornerRadius: corner)
+            .accessibilityHidden(true)
     }
 }
 
+/// Home Screen widget illustration (Lovable widget onboarding reference).
 struct WidgetArt: View {
     var body: some View {
-        ArtCanvas(viewBox: CGSize(width: 320, height: 350)) { context in
-            context.stroke(SVGPath.parse("M8 350V82Q8 8 82 8h156q74 0 74 74v268"), with: .foreground, style: StrokeStyle(lineWidth: 2.5, lineJoin: .round))
-            context.stroke(Path(roundedRect: CGRect(x: 112, y: 25, width: 96, height: 26), cornerRadius: 13), with: .foreground, lineWidth: 1.4)
-            context.stroke(Path(roundedRect: CGRect(x: 40, y: 104, width: 112, height: 112), cornerRadius: 27, style: .continuous), with: .foreground, lineWidth: 2.5)
-            context.fill(
-                SVGPath.parse("M89 123c-8 0-11 5-10 11 0 6 5 9 11 9 5 1 3 8-5 19-3 4-1 6 2 6s7-5 9-9c8-13 10-24 6-31-2-4-7-5-13-5Zm19 0c-8 0-11 5-10 11 0 6 5 9 11 9 5 1 3 8-5 19-3 4-1 6 2 6s7-5 9-9c8-13 10-24 6-31-2-4-7-5-13-5Z"),
-                with: .foreground
-            )
-            for rect in [CGRect(x: 163, y: 104, width: 47, height: 47), CGRect(x: 228, y: 104, width: 47, height: 47), CGRect(x: 181, y: 157, width: 47, height: 47)] {
-                context.stroke(Path(roundedRect: rect, cornerRadius: 13, style: .continuous), with: .muted, lineWidth: 1.3)
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let widgetSide = width * 0.48
+            let appSide = width * 0.21
+
+            ZStack(alignment: .top) {
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 70,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 70,
+                    style: .continuous
+                )
+                .stroke(Color.motivaForeground, lineWidth: 2.5)
+                .frame(maxWidth: .infinity)
+                .frame(height: geometry.size.height * 1.12, alignment: .top)
+                .shadow(color: .black.opacity(0.07), radius: 14, x: 0, y: -8)
+
+                Capsule()
+                    .stroke(Color.motivaForeground, lineWidth: 1.5)
+                    .frame(width: width * 0.32, height: 29)
+                    .padding(.top, 17)
+
+                ZStack(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 31, style: .continuous)
+                        .stroke(Color.motivaForeground, lineWidth: 2.8)
+                        .frame(width: widgetSide, height: widgetSide)
+                        .overlay(alignment: .top) {
+                            Image("MotivaLogoTransparent")
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .frame(width: min(63, widgetSide * 0.55), height: min(63, widgetSide * 0.55))
+                                .frame(width: widgetSide)
+                                .padding(.top, 8)
+                                .accessibilityHidden(true)
+                        }
+
+                    widgetAppOutline
+                        .frame(width: appSide, height: appSide)
+                        .offset(x: width * 0.52, y: 0)
+
+                    widgetAppOutline
+                        .frame(width: appSide, height: appSide)
+                        .offset(x: width * 0.79, y: 0)
+
+                    widgetAppOutline
+                        .frame(width: appSide, height: appSide)
+                        .offset(x: width * 0.59, y: 57)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, width * 0.10)
+                .padding(.top, 99)
             }
         }
-        .aspectRatio(320 / 350, contentMode: .fit)
-        .frame(maxHeight: 350)
+        .aspectRatio(323 / 368, contentMode: .fit)
+        .frame(maxWidth: 323)
         .mask(
-            LinearGradient(stops: [.init(color: .black, location: 0.78), .init(color: .clear, location: 1)], startPoint: .top, endPoint: .bottom)
+            LinearGradient(
+                stops: [
+                    .init(color: .black, location: 0),
+                    .init(color: .black, location: 0.77),
+                    .init(color: .clear, location: 0.99),
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
         )
-        .accessibilityLabel("Motiva quote widget on an iPhone Home Screen")
+        .accessibilityLabel("Motiva widget on an iPhone Home Screen")
+    }
+
+    private var widgetAppOutline: some View {
+        RoundedRectangle(cornerRadius: 15, style: .continuous)
+            .stroke(Color.motivaAppOutline, lineWidth: 1.5)
     }
 }
 

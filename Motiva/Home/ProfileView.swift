@@ -222,6 +222,7 @@ struct SettingsView: View {
     @Environment(\.openURL) private var openURL
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = true
     @State private var notice: String?
+    @State private var onboardingPreview: OnboardingStep?
 
     private var version: String {
         Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
@@ -258,6 +259,11 @@ struct SettingsView: View {
                 LabeledContent("Version", value: version)
             }
             #if DEBUG
+            Section("Preview onboarding") {
+                Button("From the beginning") { onboardingPreview = .welcome }
+                Button("Notifications screen") { onboardingPreview = .reminders }
+                Button("Paywall") { onboardingPreview = .offer }
+            }
             Section("Developer") {
                 Button("Restart onboarding", role: .destructive) {
                     app.reset()
@@ -266,6 +272,12 @@ struct SettingsView: View {
                 }
             }
             #endif
+        }
+        .fullScreenCover(item: $onboardingPreview) { step in
+            OnboardingView(isPreview: true, startAt: step) { _ in
+                onboardingPreview = nil
+            }
+            .environment(store)
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
