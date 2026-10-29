@@ -256,6 +256,8 @@ private struct QuotePage: View {
     let quote: String
 
     @State private var burst = false
+    @State private var shareImage: UIImage?
+    @State private var showsShareSheet = false
 
     private var liked: Bool { app.isFavorite(quote) }
     private var shareText: String { quote.replacingOccurrences(of: "\n", with: " ") }
@@ -263,18 +265,27 @@ private struct QuotePage: View {
     var body: some View {
         VStack(spacing: 64) {
             Text(quote)
-                .font(.system(size: 28))
+                .font(.custom("BricolageGrotesque-SemiBold", size: 28))
                 .lineSpacing(10)
                 .multilineTextAlignment(.center)
                 .minimumScaleFactor(0.7)
 
             HStack(spacing: 44) {
-                ShareLink(item: shareText) {
+                Button {
+                    shareImage = QuoteShareRenderer.image(for: quote)
+                    showsShareSheet = shareImage != nil
+                } label: {
                     Image(systemName: "square.and.arrow.up")
                         .font(.system(size: 30, weight: .light))
                         .frame(width: 58, height: 58)
                 }
                 .accessibilityLabel("Share quote")
+                .sheet(isPresented: $showsShareSheet) {
+                    if let shareImage {
+                        ActivityShareSheet(items: [shareImage, shareText])
+                            .presentationDetents([.medium, .large])
+                    }
+                }
 
                 Button {
                     app.toggleFavorite(quote)

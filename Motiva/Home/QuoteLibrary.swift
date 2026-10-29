@@ -10,7 +10,7 @@ struct QuoteTopic: Identifiable, Hashable {
 enum QuoteLibrary {
     static let featured = FeaturedQuotes.quotes
 
-    static let topics: [QuoteTopic] = [
+    private static let allTopics: [QuoteTopic] = [
         QuoteTopic(name: "Featured", symbol: "star.fill", quotes: FeaturedQuotes.quotes),
         QuoteTopic(name: "Success", symbol: "chart.line.uptrend.xyaxis", quotes: [
             "Ambition isn't loud.\nIt shows up early and stays late.",
@@ -3748,6 +3748,9 @@ enum QuoteLibrary {
             "Put the habit on your calendar.\nTreat it like a meeting.",
         ]),
     ]
+
+    /// Shipped topics only (`Unfiltered (NSFW)` stays in `allTopics` for archival, not in the app UI).
+    static let topics: [QuoteTopic] = allTopics.filter { $0.name != "Unfiltered (NSFW)" }
 
     /// The mixed feed shown when no topic is selected: featured quotes first, then every topic interleaved.
     static let forYou: [String] = {

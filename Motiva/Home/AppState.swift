@@ -125,6 +125,18 @@ final class AppState {
         streakCount = stored.streakCount
         streakDay = stored.streakDay
         reminders = stored.reminders
+        backfillFollowedTopicsIfNeeded()
+    }
+
+    /// One-time migration for users who onboarded before `followedTopics` existed.
+    private func backfillFollowedTopicsIfNeeded() {
+        guard followedTopics.isEmpty else { return }
+        guard let profile = OnboardingProfile.load(),
+              let picked = profile.answers[OnboardingStep.topics.rawValue] else { return }
+        let allowed = Set(QuoteLibrary.topics.map(\.name))
+        let names = picked.filter { allowed.contains($0) }
+        guard !names.isEmpty else { return }
+        followedTopics = names
     }
 
     func isFavorite(_ quote: String) -> Bool { favorites.contains(quote) }

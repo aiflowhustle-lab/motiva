@@ -57,7 +57,7 @@ struct ProfileView: View {
         }
         .navigationDestination(for: ProfileDestination.self) { destination in
             switch destination {
-            case .topics: TopicsView(showsClose: false, onDone: onDone)
+            case .topics: FollowingTopicsView(onDone: onDone)
             case .wallpapers: WallpapersView(showsClose: false, onDone: onDone)
             case .reminders: ReminderSettingsView()
             case .settings: SettingsView()
