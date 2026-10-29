@@ -10,24 +10,28 @@ struct HomeView: View {
     @Environment(SubscriptionStore.self) private var store
     @Environment(\.scenePhase) private var scenePhase
 
-    @State private var page: Int? = 0
     @State private var sheet: HomeSheet?
     @State private var showsPaywall = false
     @State private var showsStreak = false
 
     private static let favoriteGoal = 5
-    private static let loops = 200
 
-    private var quotes: [String] { QuoteLibrary.quotes(for: app.topic) }
+    private var quotes: [String] { app.feedQuotes() }
     private var theme: FeedTheme { app.theme }
-    private var currentQuote: String { quotes[(page ?? 0) % quotes.count] }
+    private var feedIdentity: String {
+        let topicKey = app.topic ?? "forYou"
+        let followKey = app.followedTopics.joined(separator: "|")
+        return "\(topicKey)::\(followKey)"
+    }
 
     var body: some View {
         ZStack(alignment: .top) {
             theme.background.ignoresSafeArea()
 
-            feed
-                .id(app.topic ?? "")
+            CircularQuoteFeed(quotes: quotes) { quote in
+                app.visit(quote)
+            }
+            .id(feedIdentity)
 
             VStack {
                 topBar
@@ -62,7 +66,6 @@ struct HomeView: View {
             PaywallView { showsPaywall = false }
         }
         .onAppear {
-            app.visit(currentQuote)
             registerOpen()
             PremiumAccess.clampSelection(app: app, isPremium: store.isPremium)
             Task { await store.refreshEntitlements() }
@@ -79,28 +82,21 @@ struct HomeView: View {
         }
         .onChange(of: store.isPremium) { _, isPremium in
             PremiumAccess.clampSelection(app: app, isPremium: isPremium)
+            Task { await app.rescheduleReminders() }
         }
-        .onChange(of: page) { app.visit(currentQuote) }
-        .onChange(of: app.topic) { page = 0 }
+        .onChange(of: app.topic) { _, _ in
+            Task { await app.rescheduleReminders() }
+        }
+        .onChange(of: app.followedTopics) { _, _ in
+            Task { await app.rescheduleReminders() }
+        }
         .onChange(of: app.theme) { _, _ in
-            WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
+            WidgetQuoteSync.refresh(
+                topic: app.topic,
+                followedTopics: app.followedTopics,
+                theme: app.theme
+            )
         }
-    }
-
-    private var feed: some View {
-        ScrollView(.vertical) {
-            LazyVStack(spacing: 0) {
-                ForEach(Array(0..<(quotes.count * Self.loops)), id: \.self) { index in
-                    QuotePage(quote: quotes[index % quotes.count])
-                        .containerRelativeFrame([.horizontal, .vertical])
-                }
-            }
-            .scrollTargetLayout()
-        }
-        .scrollTargetBehavior(.paging)
-        .scrollPosition(id: $page)
-        .scrollIndicators(.hidden)
-        .ignoresSafeArea()
     }
 
     private var topBar: some View {
@@ -184,6 +180,74 @@ struct HomeView: View {
 
     private func dismissStreak() {
         withAnimation(.easeInOut(duration: 0.3)) { showsStreak = false }
+    }
+}
+
+/// Fixed-size paging window so the feed stays infinite without materializing tens of thousands of pages.
+private struct CircularQuoteFeed: View {
+    let quotes: [String]
+    let onQuoteShown: (String) -> Void
+
+    private static let window = 5
+    private static let center = window / 2
+
+    @State private var page: Int?
+    @State private var anchorIndex = 0
+
+    var body: some View {
+        Group {
+            if quotes.isEmpty {
+                Color.clear
+            } else {
+                ScrollView(.vertical) {
+                    LazyVStack(spacing: 0) {
+                        ForEach(0..<Self.window, id: \.self) { pageIndex in
+                            QuotePage(quote: quote(at: pageIndex))
+                                .containerRelativeFrame([.horizontal, .vertical])
+                        }
+                    }
+                    .scrollTargetLayout()
+                }
+                .scrollTargetBehavior(.paging)
+                .scrollPosition(id: $page)
+                .scrollIndicators(.hidden)
+                .ignoresSafeArea()
+            }
+        }
+        .onAppear {
+            page = Self.center
+            onQuoteShown(quotes[anchorIndex])
+        }
+        .onChange(of: quotes) { _, newQuotes in
+            anchorIndex = 0
+            page = Self.center
+            if let first = newQuotes.first {
+                onQuoteShown(first)
+            }
+        }
+        .onChange(of: page) { _, newPage in
+            guard let newPage, !quotes.isEmpty else { return }
+            let delta = newPage - Self.center
+            guard delta != 0 else { return }
+
+            let count = quotes.count
+            anchorIndex = (anchorIndex + delta % count + count) % count
+            onQuoteShown(quotes[anchorIndex])
+
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                page = Self.center
+            }
+        }
+    }
+
+    private func quote(at pageIndex: Int) -> String {
+        let count = quotes.count
+        guard count > 0 else { return "" }
+        let offset = pageIndex - Self.center
+        let index = (anchorIndex + offset % count + count) % count
+        return quotes[index]
     }
 }
 

@@ -57,14 +57,28 @@ struct QuoteLibraryTests {
     }
 
     @Test func forYouContainsEveryQuoteExactlyOnce() {
-        let all = QuoteLibrary.featured + QuoteLibrary.topics.flatMap(\.quotes)
+        let topicQuotes = QuoteLibrary.topics.filter { $0.name != "Featured" }.flatMap(\.quotes)
+        let all = QuoteLibrary.featured + topicQuotes
         #expect(QuoteLibrary.forYou.count == all.count)
-        #expect(Set(QuoteLibrary.forYou).count == QuoteLibrary.forYou.count, "Duplicate quote in library")
+        #expect(Set(QuoteLibrary.forYou).count == QuoteLibrary.forYou.count, "Duplicate quote in For you feed")
     }
 
     @Test func unknownTopicFallsBackToForYou() {
         #expect(QuoteLibrary.quotes(for: "Not a topic") == QuoteLibrary.forYou)
         #expect(QuoteLibrary.quotes(for: nil) == QuoteLibrary.forYou)
         #expect(QuoteLibrary.quotes(for: "Confidence") == QuoteLibrary.topics.first { $0.name == "Confidence" }?.quotes)
+    }
+
+    @Test func blendedFeedInterleavesFollowedTopics() {
+        let quotes = QuoteLibrary.blended(following: ["Motivation", "Self-esteem"])
+        #expect(quotes.count > 200)
+        #expect(quotes.contains(QuoteLibrary.topics.first { $0.name == "Motivation" }!.quotes[0]))
+        #expect(quotes.contains(QuoteLibrary.topics.first { $0.name == "Self-esteem" }!.quotes[0]))
+    }
+
+    @Test func forYouUsesFollowedTopicsWhenNoSingleTopicSelected() {
+        let quotes = QuoteLibrary.quotes(for: nil, followedTopics: ["Discipline"])
+        let discipline = QuoteLibrary.topics.first { $0.name == "Discipline" }!.quotes
+        #expect(quotes == discipline)
     }
 }

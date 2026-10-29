@@ -204,7 +204,7 @@ struct ReminderSettingsView: View {
         .task(id: app.reminders) {
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled else { return }
-            await ReminderScheduler.schedule(app.reminders, quotes: QuoteLibrary.quotes(for: app.topic).shuffled())
+            await app.rescheduleReminders()
         }
     }
 }

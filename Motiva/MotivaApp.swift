@@ -21,12 +21,13 @@ struct MotivaApp: App {
                         app.applyOnboarding(profile)
                         hasCompletedOnboarding = true
                         Task {
-                            await ReminderScheduler.schedule(
-                                app.reminders,
-                                quotes: QuoteLibrary.quotes(for: app.topic).shuffled()
-                            )
+                            await app.rescheduleReminders()
                         }
-                        WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
+                        WidgetQuoteSync.refresh(
+                            topic: app.topic,
+                            followedTopics: app.followedTopics,
+                            theme: app.theme
+                        )
                     }
                 }
             }
@@ -35,7 +36,11 @@ struct MotivaApp: App {
             .task {
                 await store.load()
                 if hasCompletedOnboarding {
-                    WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
+                    WidgetQuoteSync.refresh(
+                        topic: app.topic,
+                        followedTopics: app.followedTopics,
+                        theme: app.theme
+                    )
                 }
             }
         }

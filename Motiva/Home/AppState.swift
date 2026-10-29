@@ -70,6 +70,7 @@ final class AppState {
         var history: [String] = []
         var theme: FeedTheme = .classic
         var topic: String?
+        var followedTopics: [String] = []
         var writtenGoals = ""
         var streakCount = 0
         var streakDay: CalendarDay?
@@ -86,6 +87,7 @@ final class AppState {
             history = (try? container.decodeIfPresent([String].self, forKey: .history)) ?? fallback.history
             theme = (try? container.decodeIfPresent(FeedTheme.self, forKey: .theme)) ?? fallback.theme
             topic = (try? container.decodeIfPresent(String.self, forKey: .topic)) ?? fallback.topic
+            followedTopics = (try? container.decodeIfPresent([String].self, forKey: .followedTopics)) ?? fallback.followedTopics
             writtenGoals = (try? container.decodeIfPresent(String.self, forKey: .writtenGoals)) ?? fallback.writtenGoals
             streakCount = (try? container.decodeIfPresent(Int.self, forKey: .streakCount)) ?? fallback.streakCount
             streakDay = (try? container.decodeIfPresent(CalendarDay.self, forKey: .streakDay)) ?? fallback.streakDay
@@ -103,6 +105,7 @@ final class AppState {
     private(set) var history: [String] { didSet { save() } }
     var theme: FeedTheme { didSet { save(); syncWidgetFeed() } }
     var topic: String? { didSet { save(); syncWidgetFeed() } }
+    var followedTopics: [String] { didSet { save(); syncWidgetFeed() } }
     var writtenGoals: String { didSet { save() } }
     private(set) var streakCount: Int { didSet { save() } }
     private(set) var streakDay: CalendarDay? { didSet { save() } }
@@ -117,6 +120,7 @@ final class AppState {
         history = stored.history
         theme = stored.theme
         topic = stored.topic
+        followedTopics = stored.followedTopics
         writtenGoals = stored.writtenGoals
         streakCount = stored.streakCount
         streakDay = stored.streakDay
@@ -162,10 +166,21 @@ final class AppState {
             end: profile.reminderEnd
         )
         writtenGoals = profile.writtenGoals
-        if let name = profile.answers[OnboardingStep.topics.rawValue]?.first,
-           QuoteLibrary.topics.contains(where: { $0.name == name }) {
-            topic = name
-        }
+        let libraryNames = Set(QuoteLibrary.topics.map(\.name))
+        followedTopics = (profile.answers[OnboardingStep.topics.rawValue] ?? [])
+            .filter { libraryNames.contains($0) }
+        topic = nil
+    }
+
+    func feedQuotes() -> [String] {
+        QuoteLibrary.quotes(for: topic, followedTopics: followedTopics)
+    }
+
+    func rescheduleReminders() async {
+        await ReminderScheduler.schedule(
+            reminders,
+            quotes: feedQuotes().shuffled()
+        )
     }
 
     func clearHistory(_ quotes: [String]) {
@@ -179,6 +194,7 @@ final class AppState {
         history = fresh.history
         theme = fresh.theme
         topic = fresh.topic
+        followedTopics = fresh.followedTopics
         writtenGoals = fresh.writtenGoals
         streakCount = fresh.streakCount
         streakDay = fresh.streakDay
@@ -193,6 +209,7 @@ final class AppState {
         stored.history = history
         stored.theme = theme
         stored.topic = topic
+        stored.followedTopics = followedTopics
         stored.writtenGoals = writtenGoals
         stored.streakCount = streakCount
         stored.streakDay = streakDay
@@ -202,6 +219,6 @@ final class AppState {
     }
 
     private func syncWidgetFeed() {
-        WidgetQuoteSync.refresh(topic: topic, theme: theme)
+        WidgetQuoteSync.refresh(topic: topic, followedTopics: followedTopics, theme: theme)
     }
 }

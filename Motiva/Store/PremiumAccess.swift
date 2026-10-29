@@ -30,5 +30,9 @@ enum PremiumAccess {
         if !canUse(topicName: app.topic, isPremium: isPremium) {
             app.topic = nil
         }
+        let allowed = app.followedTopics.filter { canUse(topicName: $0, isPremium: isPremium) }
+        if allowed != app.followedTopics {
+            app.followedTopics = allowed
+        }
     }
 }
