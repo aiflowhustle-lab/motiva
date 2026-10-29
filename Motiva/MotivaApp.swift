@@ -21,7 +21,10 @@ struct MotivaApp: App {
                         app.applyOnboarding(profile)
                         hasCompletedOnboarding = true
                         Task {
-                            await ReminderScheduler.schedule(app.reminders, quotes: QuoteLibrary.forYou.shuffled())
+                            await ReminderScheduler.schedule(
+                                app.reminders,
+                                quotes: QuoteLibrary.quotes(for: app.topic).shuffled()
+                            )
                         }
                         WidgetQuoteSync.refresh(topic: app.topic, theme: app.theme)
                     }

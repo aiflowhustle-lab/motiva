@@ -3,6 +3,9 @@ import SwiftUI
 enum TileKind: String, CaseIterable, Identifiable {
     case topics, wallpapers, reminders, homeWidget, lockWidget, appIcon, watch, bundle
 
+    /// Profile grid only shows features that ship in v1.
+    static let profileTiles: [TileKind] = [.topics, .wallpapers, .reminders]
+
     var id: String { rawValue }
 
     var title: String {

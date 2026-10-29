@@ -70,6 +70,7 @@ final class AppState {
         var history: [String] = []
         var theme: FeedTheme = .classic
         var topic: String?
+        var writtenGoals = ""
         var streakCount = 0
         var streakDay: CalendarDay?
         var reminders = ReminderSettings()
@@ -85,6 +86,7 @@ final class AppState {
             history = (try? container.decodeIfPresent([String].self, forKey: .history)) ?? fallback.history
             theme = (try? container.decodeIfPresent(FeedTheme.self, forKey: .theme)) ?? fallback.theme
             topic = (try? container.decodeIfPresent(String.self, forKey: .topic)) ?? fallback.topic
+            writtenGoals = (try? container.decodeIfPresent(String.self, forKey: .writtenGoals)) ?? fallback.writtenGoals
             streakCount = (try? container.decodeIfPresent(Int.self, forKey: .streakCount)) ?? fallback.streakCount
             streakDay = (try? container.decodeIfPresent(CalendarDay.self, forKey: .streakDay)) ?? fallback.streakDay
             reminders = (try? container.decodeIfPresent(ReminderSettings.self, forKey: .reminders)) ?? fallback.reminders
@@ -101,6 +103,7 @@ final class AppState {
     private(set) var history: [String] { didSet { save() } }
     var theme: FeedTheme { didSet { save(); syncWidgetFeed() } }
     var topic: String? { didSet { save(); syncWidgetFeed() } }
+    var writtenGoals: String { didSet { save() } }
     private(set) var streakCount: Int { didSet { save() } }
     private(set) var streakDay: CalendarDay? { didSet { save() } }
     var reminders: ReminderSettings { didSet { save() } }
@@ -114,6 +117,7 @@ final class AppState {
         history = stored.history
         theme = stored.theme
         topic = stored.topic
+        writtenGoals = stored.writtenGoals
         streakCount = stored.streakCount
         streakDay = stored.streakDay
         reminders = stored.reminders
@@ -157,6 +161,11 @@ final class AppState {
             start: profile.reminderStart,
             end: profile.reminderEnd
         )
+        writtenGoals = profile.writtenGoals
+        if let name = profile.answers[OnboardingStep.topics.rawValue]?.first,
+           QuoteLibrary.topics.contains(where: { $0.name == name }) {
+            topic = name
+        }
     }
 
     func clearHistory(_ quotes: [String]) {
@@ -170,6 +179,7 @@ final class AppState {
         history = fresh.history
         theme = fresh.theme
         topic = fresh.topic
+        writtenGoals = fresh.writtenGoals
         streakCount = fresh.streakCount
         streakDay = fresh.streakDay
         reminders = fresh.reminders
@@ -183,6 +193,7 @@ final class AppState {
         stored.history = history
         stored.theme = theme
         stored.topic = topic
+        stored.writtenGoals = writtenGoals
         stored.streakCount = streakCount
         stored.streakDay = streakDay
         stored.reminders = reminders

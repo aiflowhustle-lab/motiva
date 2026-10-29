@@ -8,8 +8,6 @@ struct ProfileView: View {
     @Environment(AppState.self) private var app
     var onDone: () -> Void
 
-    @State private var comingSoon: String?
-
     private var streakShareText: String {
         app.streakCount == 1
             ? "I just started a daily streak with Motiva."
@@ -42,7 +40,7 @@ struct ProfileView: View {
                 SectionTitle(text: "Customize the app")
 
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 18), GridItem(.flexible(), spacing: 18)], spacing: 18) {
-                    ForEach(TileKind.allCases) { kind in
+                    ForEach(TileKind.profileTiles) { kind in
                         tile(kind)
                     }
                 }
@@ -64,11 +62,6 @@ struct ProfileView: View {
             case .reminders: ReminderSettingsView()
             case .settings: SettingsView()
             }
-        }
-        .alert(comingSoon ?? "", isPresented: Binding(get: { comingSoon != nil }, set: { if !$0 { comingSoon = nil } })) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("This is coming soon to Motiva.")
         }
     }
 
@@ -96,7 +89,7 @@ struct ProfileView: View {
         case .reminders:
             NavigationLink(value: ProfileDestination.reminders) { label }.buttonStyle(CardButtonStyle())
         default:
-            Button { comingSoon = kind.title } label: { label }.buttonStyle(CardButtonStyle())
+            EmptyView()
         }
     }
 }

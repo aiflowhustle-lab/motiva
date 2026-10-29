@@ -3,6 +3,9 @@ import SwiftUI
 enum SavedList: String, Hashable, CaseIterable {
     case favorites, collections, own, history
 
+    /// Saved lists shown in Explore topics (Collections ships later).
+    static let exploreMenu: [SavedList] = [.favorites, .own, .history]
+
     var title: String {
         switch self {
         case .favorites: "Favorites"
@@ -57,7 +60,7 @@ struct TopicsView: View {
                 .padding(.top, 8)
 
                 LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
-                    ForEach(SavedList.allCases, id: \.self) { list in
+                    ForEach(SavedList.exploreMenu, id: \.self) { list in
                         NavigationLink(value: list) {
                             HStack(alignment: .top) {
                                 Text(list.title)

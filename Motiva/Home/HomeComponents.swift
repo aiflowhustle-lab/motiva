@@ -46,7 +46,7 @@ struct SectionTitle: View {
 
 struct UnlockBanner: View {
     var title = "Unlock all"
-    var message = "Access all topics, quotes, themes, and remove ads!"
+    var message = "Unlock every topic, theme, and the full quote library."
     var symbol = "lock.open"
 
     @Environment(SubscriptionStore.self) private var store

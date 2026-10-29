@@ -8,18 +8,10 @@ struct QuoteTopic: Identifiable, Hashable {
 }
 
 enum QuoteLibrary {
-    static let featured = [
-        "Investing in yourself is\never a gamble.",
-        "I feed my spirit.\nI train my body.\nI focus my mind.\nThis is my time.",
-        "You are allowed to be both\na masterpiece and\na work in progress.",
-        "Small steps are still\nsteps forward.",
-        "Be where your feet are.",
-        "Your peace is worth\nprotecting.",
-        "You have not come this far\nto only come this far.",
-        "Make room for the person\nyou are becoming.",
-    ]
+    static let featured = FeaturedQuotes.quotes
 
     static let topics: [QuoteTopic] = [
+        QuoteTopic(name: "Featured", symbol: "star.fill", quotes: FeaturedQuotes.quotes),
         QuoteTopic(name: "Success", symbol: "chart.line.uptrend.xyaxis", quotes: [
             "Ambition isn't loud.\nIt shows up early and stays late.",
             "You don't need a perfect plan.\nYou need a first move.",
@@ -1962,7 +1954,7 @@ enum QuoteLibrary {
         var mixed = featured
         let longest = topics.map(\.quotes.count).max() ?? 0
         for index in 0..<longest {
-            for topic in topics where index < topic.quotes.count {
+            for topic in topics where topic.name != "Featured" && index < topic.quotes.count {
                 mixed.append(topic.quotes[index])
             }
         }
