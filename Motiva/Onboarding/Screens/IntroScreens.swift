@@ -25,7 +25,7 @@ struct IntroScreen: View {
         VStack(spacing: 0) {
             QuoteMarkArt()
                 .frame(maxWidth: .infinity, minHeight: 190, maxHeight: .infinity)
-                .padding(.top, 34)
+                .padding(.top, 92)
 
             VStack(spacing: 18) {
                 Text(title).titleStyle()

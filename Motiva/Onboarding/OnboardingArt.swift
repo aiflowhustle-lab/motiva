@@ -48,15 +48,17 @@ struct MotivaLogoMark: View {
     }
 }
 
+/// White mark on black tile — welcome and widget onboarding.
 struct QuoteMarkArt: View {
     var size: CGFloat = 170
 
     var body: some View {
-        Image("MotivaLogoTransparent")
+        Image("MotivaWelcomeMark")
             .resizable()
             .interpolation(.high)
             .scaledToFit()
             .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.223, style: .continuous))
             .accessibilityLabel("Motiva")
     }
 }
@@ -340,14 +342,13 @@ struct WidgetArt: View {
                     RoundedRectangle(cornerRadius: 31, style: .continuous)
                         .stroke(Color.motivaForeground, lineWidth: 2.8)
                         .frame(width: widgetSide, height: widgetSide)
-                        .overlay(alignment: .top) {
-                            Image("MotivaLogoTransparent")
+                        .overlay {
+                            Image("MotivaWelcomeMark")
                                 .resizable()
                                 .interpolation(.high)
                                 .scaledToFit()
                                 .frame(width: min(63, widgetSide * 0.55), height: min(63, widgetSide * 0.55))
-                                .frame(width: widgetSide)
-                                .padding(.top, 8)
+                                .clipShape(RoundedRectangle(cornerRadius: min(63, widgetSide * 0.55) * 0.223, style: .continuous))
                                 .accessibilityHidden(true)
                         }
 

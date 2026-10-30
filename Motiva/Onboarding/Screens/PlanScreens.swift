@@ -730,14 +730,13 @@ struct WidgetScreen: View {
             VStack(spacing: 0) {
                 Text("Add a free widget to your\nHome Screen")
                     .titleStyle()
-                    .padding(.top, 52)
+                    .padding(.top, 84)
 
                 Text("On your phone’s Home Screen, touch and\nhold an empty area, then tap Edit")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .font(.motivaBody)
                     .multilineTextAlignment(.center)
                     .lineSpacing(4)
-                    .padding(.top, 22)
+                    .padding(.top, 28)
                     .padding(.horizontal, 4)
 
                 WidgetArt()
@@ -749,7 +748,6 @@ struct WidgetScreen: View {
                 VStack(spacing: 19) {
                     Button("Install widget") { showsInstallSheet = true }.buttonStyle(.primary)
                     Button("Remind me later", action: onContinue)
-                        .font(.system(size: 18, weight: .bold))
                         .buttonStyle(.quiet(.motivaForeground))
                 }
                 .padding(.bottom, 16)
@@ -778,8 +776,7 @@ private struct WidgetInstallSheet: View {
                     .padding(.bottom, 14)
 
                 Text("On your iPhone, touch and hold an empty area on the Home Screen.")
-                    .font(.system(size: 16))
-                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .font(.motivaBody)
                     .lineSpacing(4)
 
                 VStack(alignment: .leading, spacing: 8) {
@@ -787,14 +784,13 @@ private struct WidgetInstallSheet: View {
                     Text("2. Find Motiva and choose a widget.")
                     Text("3. Tap **Add Widget**, then **Done**.")
                 }
-                .font(.system(size: 16))
-                .foregroundStyle(Color.motivaWelcomeSubtitle)
+                .font(.motivaBody)
                 .lineSpacing(4)
                 .padding(.top, 16)
 
                 Text("Widgets are added from the Home Screen on your iPhone — not from this button alone.")
-                    .font(.system(size: 13))
-                    .foregroundStyle(Color.motivaWelcomeSubtitle)
+                    .font(.motivaBody)
+                    .foregroundStyle(Color.motivaMuted)
                     .padding(.top, 16)
                     .padding(.bottom, 24)
 
