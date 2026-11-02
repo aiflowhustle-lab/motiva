@@ -18,7 +18,7 @@ struct MotivaQuoteWidget: Widget {
                 }
         }
         .configurationDisplayName("Daily quote")
-        .description("Make it yours by editing this widget from the app's widget settings.")
+        .description("Make it yours by editing this widget\nfrom the app's widget settings.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
