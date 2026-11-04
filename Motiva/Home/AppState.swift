@@ -104,7 +104,7 @@ final class AppState {
     var ownQuotes: [String] { didSet { save() } }
     private(set) var history: [String] { didSet { save() } }
     var theme: FeedTheme { didSet { save(); syncWidgetFeed() } }
-    var topic: String? { didSet { save(); syncWidgetFeed() } }
+    var topic: String? { didSet { save() } }
     var followedTopics: [String] { didSet { save(); syncWidgetFeed() } }
     var writtenGoals: String { didSet { save() } }
     private(set) var streakCount: Int { didSet { save() } }
@@ -149,6 +149,17 @@ final class AppState {
         }
     }
 
+    /// Follow / unfollow a topic — persisted immediately (home feed, widget, reminders).
+    func toggleFollowedTopic(_ name: String) {
+        var topics = followedTopics
+        if let index = topics.firstIndex(of: name) {
+            topics.remove(at: index)
+        } else {
+            topics.append(name)
+        }
+        followedTopics = topics
+    }
+
     func visit(_ quote: String) {
         var updated = history.filter { $0 != quote }
         updated.insert(quote, at: 0)
@@ -184,14 +195,20 @@ final class AppState {
         topic = nil
     }
 
+    /// Home feed — respects the topic filter when browsing Explore.
     func feedQuotes() -> [String] {
         QuoteLibrary.quotes(for: topic, followedTopics: followedTopics)
+    }
+
+    /// Widget and daily reminders — followed topics only, then For you.
+    func personalizedQuotes() -> [String] {
+        QuoteLibrary.quotes(for: nil, followedTopics: followedTopics)
     }
 
     func rescheduleReminders() async {
         await ReminderScheduler.schedule(
             reminders,
-            quotes: feedQuotes().shuffled()
+            quotes: personalizedQuotes().shuffled()
         )
     }
 
@@ -231,6 +248,6 @@ final class AppState {
     }
 
     private func syncWidgetFeed() {
-        WidgetQuoteSync.refresh(topic: topic, followedTopics: followedTopics, theme: theme)
+        WidgetQuoteSync.refresh(followedTopics: followedTopics, theme: theme)
     }
 }

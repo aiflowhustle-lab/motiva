@@ -19,8 +19,19 @@ struct PremiumAccessTests {
         let app = AppState()
         app.topic = "Confidence"
         app.theme = .paper
-        PremiumAccess.clampSelection(app: app, isPremium: false)
+        app.followedTopics = ["Motivation", "Confidence"]
+        let removed = PremiumAccess.clampSelection(app: app, isPremium: false)
         #expect(app.topic == nil)
         #expect(app.theme == .classic)
+        #expect(app.followedTopics == ["Motivation"])
+        #expect(removed == ["Confidence"])
+    }
+
+    @Test func toggleFollowedTopicPersists() {
+        let app = AppState()
+        app.toggleFollowedTopic("Success")
+        #expect(app.followedTopics == ["Success"])
+        app.toggleFollowedTopic("Success")
+        #expect(app.followedTopics.isEmpty)
     }
 }

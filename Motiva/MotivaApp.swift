@@ -24,7 +24,6 @@ struct MotivaApp: App {
                             await app.rescheduleReminders()
                         }
                         WidgetQuoteSync.refresh(
-                            topic: app.topic,
                             followedTopics: app.followedTopics,
                             theme: app.theme
                         )
@@ -37,7 +36,6 @@ struct MotivaApp: App {
                 await store.load()
                 if hasCompletedOnboarding {
                     WidgetQuoteSync.refresh(
-                        topic: app.topic,
                         followedTopics: app.followedTopics,
                         theme: app.theme
                     )

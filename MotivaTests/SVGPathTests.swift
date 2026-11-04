@@ -81,4 +81,12 @@ struct QuoteLibraryTests {
         let discipline = QuoteLibrary.topics.first { $0.name == "Discipline" }!.quotes
         #expect(quotes == discipline)
     }
+
+    @Test func browsingTopicDoesNotChangePersonalizedPool() {
+        let followed = QuoteLibrary.quotes(for: nil, followedTopics: ["Discipline"])
+        let browsingMotivation = QuoteLibrary.quotes(for: "Motivation", followedTopics: ["Discipline"])
+        #expect(followed == QuoteLibrary.topics.first { $0.name == "Discipline" }!.quotes)
+        #expect(browsingMotivation == QuoteLibrary.topics.first { $0.name == "Motivation" }!.quotes)
+        #expect(followed != browsingMotivation)
+    }
 }

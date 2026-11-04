@@ -42,6 +42,7 @@ struct TopicsView: View {
 
     @State private var search = ""
     @State private var showsPaywall = false
+    @State private var browsingTopic: QuoteTopic?
 
     private var filteredTopics: [QuoteTopic] {
         let query = search.trimmingCharacters(in: .whitespaces)
@@ -83,18 +84,47 @@ struct TopicsView: View {
 
                 VStack(spacing: 14) {
                     if search.isEmpty {
-                        topicRow(name: "For you", symbol: "sparkle", locked: false, selected: app.topic == nil) {
+                        Button {
                             app.topic = nil
+                            onDone()
+                        } label: {
+                            topicRowLabel(
+                                name: "For you",
+                                symbol: "sparkle",
+                                locked: false,
+                                following: false,
+                                showsChevron: true
+                            )
                         }
+                        .buttonStyle(CardButtonStyle(cornerRadius: 20))
                     }
                     ForEach(filteredTopics) { topic in
                         let locked = PremiumAccess.isTopicLocked(topic.name, isPremium: store.isPremium)
-                        topicRow(name: topic.name, symbol: topic.symbol, locked: locked, selected: app.topic == topic.name) {
-                            if locked {
-                                showsPaywall = true
-                            } else {
-                                app.topic = topic.name
+                        let following = app.followedTopics.contains(topic.name)
+                        if locked {
+                            Button { showsPaywall = true } label: {
+                                topicRowLabel(
+                                    name: topic.name,
+                                    symbol: topic.symbol,
+                                    locked: true,
+                                    following: following,
+                                    showsChevron: false
+                                )
                             }
+                            .buttonStyle(CardButtonStyle(cornerRadius: 20))
+                        } else {
+                            Button {
+                                browsingTopic = topic
+                            } label: {
+                                topicRowLabel(
+                                    name: topic.name,
+                                    symbol: topic.symbol,
+                                    locked: false,
+                                    following: following,
+                                    showsChevron: true
+                                )
+                            }
+                            .buttonStyle(CardButtonStyle(cornerRadius: 20))
                         }
                     }
                     if filteredTopics.isEmpty {
@@ -112,32 +142,42 @@ struct TopicsView: View {
             }
         }
         .navigationDestination(for: SavedList.self) { SavedQuotesView(list: $0) }
+        .fullScreenCover(item: $browsingTopic) { topic in
+            TopicBrowseView(topicName: topic.name)
+                .environment(app)
+                .environment(store)
+        }
         .fullScreenCover(isPresented: $showsPaywall) {
             PaywallView { showsPaywall = false }
         }
     }
 
-    private func topicRow(name: String, symbol: String, locked: Bool, selected: Bool, select: @escaping () -> Void) -> some View {
-        Button {
-            select()
-            if !locked { onDone() }
-        } label: {
-            HStack(spacing: 14) {
-                Image(systemName: locked ? "lock.fill" : symbol)
-                    .font(.system(size: 22, weight: .light))
-                    .frame(width: 30)
-                Text(name)
-                    .font(.system(size: 21))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: selected ? "checkmark" : (locked ? "crown" : "chevron.right"))
-                    .font(.system(size: 16, weight: selected ? .bold : .regular))
-                    .foregroundStyle(selected ? Color.motivaForeground : Color.sheetMuted)
+    private func topicRowLabel(
+        name: String,
+        symbol: String,
+        locked: Bool,
+        following: Bool,
+        showsChevron: Bool
+    ) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: locked ? "lock.fill" : symbol)
+                .font(.system(size: 22, weight: .light))
+                .frame(width: 30)
+            Text(name)
+                .font(.system(size: 21))
+                .frame(maxWidth: .infinity, alignment: .leading)
+            if following, !locked {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 18))
+                    .foregroundStyle(Color.motivaForeground)
+                    .accessibilityLabel("Following")
             }
-            .padding(.horizontal, 17)
-            .frame(minHeight: 78)
+            Image(systemName: locked ? "crown" : (showsChevron ? "chevron.right" : "chevron.right"))
+                .font(.system(size: 16, weight: .regular))
+                .foregroundStyle(Color.sheetMuted)
         }
-        .buttonStyle(CardButtonStyle(cornerRadius: 20))
-        .accessibilityAddTraits(selected ? .isSelected : [])
+        .padding(.horizontal, 17)
+        .frame(minHeight: 78)
     }
 }
 

@@ -3,9 +3,7 @@ import SwiftUI
 struct FollowingTopicsView: View {
     @Environment(AppState.self) private var app
     @Environment(SubscriptionStore.self) private var store
-    var onDone: () -> Void
 
-    @State private var selection: [String] = []
     @State private var showsPaywall = false
 
     private var topicNames: [String] {
@@ -15,21 +13,29 @@ struct FollowingTopicsView: View {
     var body: some View {
         SheetPage(title: "Topics you follow") {
             VStack(alignment: .leading, spacing: 0) {
-                Text("Your For you feed mixes quotes from the topics you follow. Pick one topic in Explore to focus on it instead.")
+                Text("Tap a topic to follow or unfollow. Your For you feed, widgets, and reminders update right away.")
                     .font(.system(size: 15))
                     .foregroundStyle(Color.sheetMuted)
                     .lineSpacing(3)
                     .padding(.top, 8)
 
+                if app.followedTopics.isEmpty {
+                    Text("You’re not following any topics yet. Pick at least one, or use Follow while browsing in Explore.")
+                        .font(.system(size: 15))
+                        .foregroundStyle(Color.sheetMuted)
+                        .lineSpacing(3)
+                        .padding(.top, 20)
+                }
+
                 FlowLayout(spacing: 10, rowSpacing: 20) {
                     ForEach(topicNames, id: \.self) { name in
-                        let selected = selection.contains(name)
+                        let selected = app.followedTopics.contains(name)
                         let locked = PremiumAccess.isTopicLocked(name, isPremium: store.isPremium)
                         Button {
                             if locked {
                                 showsPaywall = true
                             } else {
-                                toggle(name)
+                                app.toggleFollowedTopic(name)
                             }
                         } label: {
                             HStack(spacing: 8) {
@@ -46,50 +52,10 @@ struct FollowingTopicsView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, 28)
-
-                Button("Save") { save() }
-                    .buttonStyle(.primary)
-                    .padding(.top, 32)
-                    .disabled(selection.isEmpty)
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) { SheetCloseButton(action: onDone) }
-        }
-        .onAppear {
-            selection = app.followedTopics.filter { topicNames.contains($0) }
-            if selection.isEmpty {
-                selection = backfillFromOnboarding()
-            }
-            if selection.isEmpty {
-                selection = ["Motivation"]
             }
         }
         .fullScreenCover(isPresented: $showsPaywall) {
             PaywallView { showsPaywall = false }
         }
-    }
-
-    private func toggle(_ name: String) {
-        if let index = selection.firstIndex(of: name) {
-            selection.remove(at: index)
-        } else {
-            selection.append(name)
-        }
-    }
-
-    private func save() {
-        var saved = selection.filter { topicNames.contains($0) }
-        if saved.isEmpty { saved = ["Motivation"] }
-        app.followedTopics = saved
-        Task { await app.rescheduleReminders() }
-        onDone()
-    }
-
-    private func backfillFromOnboarding() -> [String] {
-        guard let profile = OnboardingProfile.load(),
-              let picked = profile.answers[OnboardingStep.topics.rawValue] else { return [] }
-        let allowed = Set(topicNames)
-        return picked.filter { allowed.contains($0) }
     }
 }

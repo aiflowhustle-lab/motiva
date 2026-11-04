@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var sheet: HomeSheet?
     @State private var showsPaywall = false
     @State private var showsStreak = false
+    @State private var clampNotice: String?
 
     private static let favoriteGoal = 5
 
@@ -65,9 +66,17 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showsPaywall) {
             PaywallView { showsPaywall = false }
         }
+        .alert("Follows updated", isPresented: Binding(
+            get: { clampNotice != nil },
+            set: { if !$0 { clampNotice = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(clampNotice ?? "")
+        }
         .onAppear {
             registerOpen()
-            PremiumAccess.clampSelection(app: app, isPremium: store.isPremium)
+            applyPremiumClamp(isPremium: store.isPremium)
             Task { await store.refreshEntitlements() }
             #if DEBUG
             // Launch with `-homeSheet topics|wallpapers|profile` to open a sheet directly.
@@ -81,21 +90,14 @@ struct HomeView: View {
             }
         }
         .onChange(of: store.isPremium) { _, isPremium in
-            PremiumAccess.clampSelection(app: app, isPremium: isPremium)
-            Task { await app.rescheduleReminders() }
-        }
-        .onChange(of: app.topic) { _, _ in
+            applyPremiumClamp(isPremium: isPremium)
             Task { await app.rescheduleReminders() }
         }
         .onChange(of: app.followedTopics) { _, _ in
             Task { await app.rescheduleReminders() }
         }
         .onChange(of: app.theme) { _, _ in
-            WidgetQuoteSync.refresh(
-                topic: app.topic,
-                followedTopics: app.followedTopics,
-                theme: app.theme
-            )
+            WidgetQuoteSync.refresh(followedTopics: app.followedTopics, theme: app.theme)
         }
     }
 
@@ -170,6 +172,13 @@ struct HomeView: View {
         }
     }
 
+    private func applyPremiumClamp(isPremium: Bool) {
+        let removed = PremiumAccess.clampSelection(app: app, isPremium: isPremium)
+        guard !removed.isEmpty else { return }
+        let names = removed.joined(separator: ", ")
+        clampNotice = "These topics need Motiva Premium to follow: \(names). They were removed from your follows."
+    }
+
     private func registerOpen() {
         guard app.registerOpen() else { return }
         Task {
@@ -184,135 +193,6 @@ struct HomeView: View {
 }
 
 /// Full-screen vertical paging — one quote per screen, system snap (no 3-page recycle glitch).
-private struct CircularQuoteFeed: View {
-    let quotes: [String]
-    let onQuoteShown: (String) -> Void
-
-    @State private var pageIndex: Int?
-    @State private var lastReportedIndex: Int?
-
-    var body: some View {
-        Group {
-            if quotes.isEmpty {
-                Color.clear
-            } else {
-                GeometryReader { geometry in
-                    let pageHeight = geometry.size.height
-                    ScrollView(.vertical) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(Array(quotes.enumerated()), id: \.offset) { index, quote in
-                                QuotePage(quote: quote)
-                                    .frame(width: geometry.size.width, height: pageHeight)
-                                    .id(index)
-                            }
-                        }
-                        .scrollTargetLayout()
-                    }
-                    .scrollTargetBehavior(.paging)
-                    .scrollIndicators(.hidden)
-                    .scrollPosition(id: $pageIndex, anchor: .top)
-                }
-                .ignoresSafeArea()
-            }
-        }
-        .onAppear {
-            if pageIndex == nil { pageIndex = 0 }
-            reportQuoteIfNeeded()
-        }
-        .onChange(of: quotes) { _, _ in
-            pageIndex = 0
-            lastReportedIndex = nil
-            reportQuoteIfNeeded()
-        }
-        .onChange(of: pageIndex) { _, _ in
-            reportQuoteIfNeeded()
-        }
-        .sensoryFeedback(.selection, trigger: pageIndex)
-    }
-
-    private func reportQuoteIfNeeded() {
-        guard let index = pageIndex, quotes.indices.contains(index) else { return }
-        guard index != lastReportedIndex else { return }
-        lastReportedIndex = index
-        onQuoteShown(quotes[index])
-    }
-}
-
-private struct QuotePage: View {
-    @Environment(AppState.self) private var app
-    let quote: String
-
-    @State private var burst = false
-    @State private var shareImage: UIImage?
-    @State private var showsShareSheet = false
-
-    private var liked: Bool { app.isFavorite(quote) }
-    private var shareText: String { quote.replacingOccurrences(of: "\n", with: " ") }
-
-    var body: some View {
-        VStack(spacing: 64) {
-            Text(quote)
-                .font(.custom("BricolageGrotesque-SemiBold", size: 28))
-                .lineSpacing(10)
-                .multilineTextAlignment(.center)
-                .minimumScaleFactor(0.7)
-
-            HStack(spacing: 44) {
-                Button {
-                    shareImage = QuoteShareRenderer.image(for: quote)
-                    showsShareSheet = shareImage != nil
-                } label: {
-                    Image(systemName: "square.and.arrow.up")
-                        .font(.system(size: 30, weight: .light))
-                        .frame(width: 58, height: 58)
-                }
-                .accessibilityLabel("Share quote")
-                .sheet(isPresented: $showsShareSheet) {
-                    if let shareImage {
-                        ActivityShareSheet(items: [shareImage, shareText])
-                            .presentationDetents([.medium, .large])
-                    }
-                }
-
-                Button {
-                    app.toggleFavorite(quote)
-                } label: {
-                    Image(systemName: liked ? "heart.fill" : "heart")
-                        .font(.system(size: 31, weight: .light))
-                        .contentTransition(.symbolEffect(.replace))
-                        .symbolEffect(.bounce, value: liked)
-                        .frame(width: 58, height: 58)
-                }
-                .accessibilityLabel(liked ? "Unfavorite quote" : "Favorite quote")
-                .sensoryFeedback(.impact(weight: .medium), trigger: liked)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 24)
-        .offset(y: 24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .contentShape(Rectangle())
-        .onTapGesture(count: 2) {
-            if !liked { app.toggleFavorite(quote) }
-            burst = true
-        }
-        .sensoryFeedback(.impact(weight: .medium), trigger: burst) { _, active in active }
-        .overlay {
-            Image(systemName: "heart.fill")
-                .font(.system(size: 110))
-                .scaleEffect(burst ? 1 : 0.4)
-                .opacity(burst ? 0.9 : 0)
-                .allowsHitTesting(false)
-                .animation(.spring(duration: 0.35, bounce: 0.5), value: burst)
-                .task(id: burst) {
-                    guard burst else { return }
-                    try? await Task.sleep(for: .milliseconds(650))
-                    burst = false
-                }
-        }
-    }
-}
-
 private struct FeedIconButton: View {
     let symbol: String
     let label: String
