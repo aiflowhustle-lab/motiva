@@ -53,7 +53,7 @@ struct UnlockBanner: View {
     @State private var showsPaywall = false
 
     var body: some View {
-        if !store.isPremium { banner }
+        if store.shouldShowPremiumChrome { banner }
     }
 
     private var banner: some View {
@@ -153,20 +153,8 @@ struct StreakWeek: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 15) {
-            ZStack(alignment: .bottom) {
-                SVGShape(
-                    "M131 28C107 55 61 89 57 125c-6 54 12 95 46 96 53 3 63-45 58-83-3-33-20-71-30-110Z",
-                    viewBox: CGRect(x: 54, y: 26, width: 112, height: 197)
-                )
-                .stroke(style: StrokeStyle(lineWidth: 1.3, lineJoin: .round))
-                Text("\(count)")
-                    .font(.system(size: 24, weight: .bold))
-                    .padding(.bottom, 10)
-            }
-            .frame(width: 50, height: 76)
-            .frame(width: 62)
-            .accessibilityElement()
-            .accessibilityLabel("\(count) day streak")
+            StreakFlameBadge(count: count, foreground: foreground)
+                .frame(width: 62, alignment: .center)
 
             HStack(spacing: 0) {
                 ForEach(Array(days.enumerated()), id: \.offset) { index, day in

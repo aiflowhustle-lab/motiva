@@ -72,7 +72,7 @@ enum OnboardingContent {
     static let improveSymbols = ["tornado", "face.smiling", "figure.2.arms.open", "sparkle", "mountain.2", "sparkles"]
 
     static let topics = [
-        "Motivation", "Self-esteem", "Positivity", "Deep", "Heartbroken", "Life lessons",
+        "Motivation", "Self-esteem", "Self-respect", "Love yourself", "Positivity", "Deep", "Heartbroken", "Life lessons",
         "Faith", "Mental toughness", "Discipline", "Mental health", "Affirmations", "Success",
     ]
 }

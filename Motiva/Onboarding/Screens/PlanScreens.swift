@@ -98,7 +98,7 @@ struct TopicsScreen: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .sensoryFeedback(.selection, trigger: model.selections[.topics, default: []].count)
+            .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.85), trigger: model.selections[.topics, default: []].count)
             .onAppear {
                 if model.selections[.topics]?.isEmpty != false {
                     model.selections[.topics] = ["Motivation"]
@@ -311,8 +311,8 @@ struct TrialOfferScreen: View {
             appeared = true
             paywallRevealHaptic += 1
         }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55), trigger: paywallRevealHaptic)
-        .sensoryFeedback(.impact(weight: .medium), trigger: paywallCTAHaptic)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.95), trigger: paywallRevealHaptic)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 1.0), trigger: paywallCTAHaptic)
         .task { if store.products.isEmpty { await store.load() } }
         .fullScreenCover(isPresented: $showsSpecialOffer, onDismiss: onClose) {
             SpecialOfferScreen(trialReminder: trialReminder)
@@ -416,7 +416,7 @@ struct TrialOfferScreen: View {
                 PlanCard(title: "Monthly", detail: store.product(.monthly).map { "\($0.displayPrice)/month" },
                          selected: plan == .monthly) { plan = .monthly }
             }
-            .sensoryFeedback(.selection, trigger: plan)
+            .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.85), trigger: plan)
             .reveal(appeared, delay: Reveal.plans)
             .padding(.bottom, 14)
 
@@ -661,8 +661,8 @@ struct SpecialOfferScreen: View {
             try? await Task.sleep(for: .seconds(0.95))
             offerCTAHaptic += 1
         }
-        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.55), trigger: offerRevealHaptic)
-        .sensoryFeedback(.impact(weight: .medium), trigger: offerCTAHaptic)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.95), trigger: offerRevealHaptic)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 1.0), trigger: offerCTAHaptic)
         .alert("Something went wrong", isPresented: Binding(get: { errorMessage != nil }, set: { if !$0 { errorMessage = nil } })) {
         } message: {
             Text(errorMessage ?? "")
@@ -758,7 +758,7 @@ struct WidgetScreen: View {
                 showsInstallSheet = false
                 onContinue()
             }
-            .presentationDetents([.medium, .large])
+            .presentationDetents([.fraction(0.50), .large])
             .presentationDragIndicator(.visible)
             .presentationCornerRadius(22)
         }
@@ -769,38 +769,45 @@ private struct WidgetInstallSheet: View {
     let onDone: () -> Void
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Add your widget")
-                    .font(.motivaTitle)
-                    .padding(.bottom, 14)
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Add your widget")
+                .font(.motivaTitle)
+                .padding(.bottom, 18)
 
-                Text("On your iPhone, touch and hold an empty area on the Home Screen.")
-                    .font(.motivaBody)
-                    .lineSpacing(4)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("1. Tap **Edit**, then **Add Widget**.")
-                    Text("2. Find Motiva and choose a widget.")
-                    Text("3. Tap **Add Widget**, then **Done**.")
-                }
+            Text("On your iPhone, touch and hold an empty area on the Home Screen.")
                 .font(.motivaBody)
                 .lineSpacing(4)
-                .padding(.top, 16)
 
-                Text("Widgets are added from the Home Screen on your iPhone — not from this button alone.")
-                    .font(.motivaBody)
-                    .foregroundStyle(Color.motivaMuted)
-                    .padding(.top, 16)
-                    .padding(.bottom, 24)
-
-                Button("Got it", action: onDone).buttonStyle(.primary)
+            VStack(alignment: .leading, spacing: 10) {
+                Text("1. Tap **Edit**, then **Add Widget**.")
+                Text("2. Find Motiva and choose a widget.")
+                Text("3. Tap **Add Widget**, then **Done**.")
             }
-            .padding(.horizontal, 25)
-            .padding(.top, 8)
-            .padding(.bottom, 24)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .font(.motivaBody)
+            .lineSpacing(4)
+            .padding(.top, 20)
+
+            Text("Widgets are added from the Home Screen on your iPhone — not from this button alone.")
+                .font(.motivaBody)
+                .foregroundStyle(Color.motivaMuted)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 20)
+
+            Spacer(minLength: 24)
         }
+        .padding(.horizontal, 25)
+        .padding(.top, 48)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color.motivaWidgetBottom)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            Button("Got it", action: onDone)
+                .buttonStyle(.primary)
+                .padding(.horizontal, 25)
+                .padding(.top, 16)
+                .padding(.bottom, 12)
+                .frame(maxWidth: .infinity)
+                .background(Color.motivaWidgetBottom)
+        }
     }
 }

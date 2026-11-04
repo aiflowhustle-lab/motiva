@@ -18,7 +18,7 @@ struct TypewriterText: View {
             .accessibilityLabel(text)
             .task(id: text) { await type() }
             .sensoryFeedback(.selection, trigger: typeTick) { _, tick in tick > 0 && tick % 4 == 0 }
-            .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.65), trigger: finishedTyping)
+            .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.9), trigger: finishedTyping)
     }
 
     private var revealed: AttributedString {

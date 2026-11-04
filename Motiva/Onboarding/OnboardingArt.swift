@@ -140,23 +140,35 @@ struct OrbitArt: View {
     }
 }
 
-struct FlameArt: View {
+/// Rest pose for the animated flame illustration.
+struct FlameStaticPlaceholder: View {
     var body: some View {
-        ArtCanvas(viewBox: CGSize(width: 220, height: 270)) { context in
-            let dotted = StrokeStyle(lineWidth: 1.3, lineCap: .round, lineJoin: .round, dash: [1, 8])
-            let solid = { (width: CGFloat) in StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round) }
+        ArtCanvas(viewBox: CGSize(width: 160, height: 200)) { context in
+            let halo = StrokeStyle(lineWidth: 1.5, lineCap: .round, dash: [2, 6])
+            let outer = StrokeStyle(lineWidth: 4.5, lineCap: .round, lineJoin: .round)
+            let inner = StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round)
 
-            context.stroke(Path(ellipseIn: CGRect(x: 35, y: 216, width: 146, height: 34)), with: .muted, style: dotted)
-            context.stroke(SVGPath.parse("M131 28C107 55 61 89 57 125c-6 54 12 95 46 96 53 3 63-45 58-83-3-33-20-71-30-110Z"), with: .foreground, style: solid(2.5))
-            context.stroke(SVGPath.parse("M122 104c-12 19-35 30-38 57-3 35 12 61 24 60 29 0 30-36 31-53 1-18-11-46-17-64Z"), with: .foreground, style: solid(1.2))
-            context.stroke(SVGPath.parse("M115 157c-10 15-19 25-16 44 1 13 7 20 13 20 16-1 12-28 3-64Z"), with: .muted, style: dotted)
-            context.stroke(SVGPath.parse("m120 17 5-5"), with: .foreground, style: solid(1.2))
-            context.fill(circle(164, 266, 2), with: .muted)
-            context.fill(circle(121, 21, 1.5), with: .muted)
+            context.stroke(
+                Path(ellipseIn: CGRect(x: 28, y: 160, width: 104, height: 24)),
+                with: .foreground,
+                style: halo
+            )
+            context.stroke(
+                SVGPath.parse(
+                    "M80 18 C122 76 138 116 134 146 C130 172 108 180 80 180 C52 180 30 172 26 146 C22 116 38 76 80 18 Z"
+                ),
+                with: .foreground,
+                style: outer
+            )
+            context.stroke(
+                SVGPath.parse(
+                    "M80 90 C104 122 108 140 106 154 C104 172 94 178 80 178 C66 178 56 172 54 154 C52 140 56 122 80 90 Z"
+                ),
+                with: .foreground,
+                style: inner
+            )
         }
-        .frame(width: 205, height: 245)
-        .artShadow()
-        .accessibilityLabel("Flame")
+        .accessibilityHidden(true)
     }
 }
 
@@ -213,6 +225,7 @@ struct NotificationArt: View {
     ]
 
     @State private var revealedCount = 1
+    @State private var popHaptic = 0
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -258,18 +271,20 @@ struct NotificationArt: View {
         .padding(.bottom, 4)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Daily Motiva notification previews")
+        .sensoryFeedback(.impact(flexibility: .rigid, intensity: 1.0), trigger: popHaptic)
         .onAppear { runPopInSequence() }
     }
 
     private func runPopInSequence() {
         revealedCount = 1
         guard items.count > 1 else { return }
-        for index in 1..<items.count {
-            let delay = 0.4 + Double(index - 1) * 0.55
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+        Task { @MainActor in
+            for index in 1..<items.count {
+                try? await Task.sleep(for: .seconds(0.4 + Double(index - 1) * 0.55))
                 withAnimation(.spring(response: 0.72, dampingFraction: 0.78)) {
                     revealedCount = index + 1
                 }
+                popHaptic += 1
             }
         }
     }

@@ -102,7 +102,7 @@ struct HomeView: View {
     private var topBar: some View {
         HStack(spacing: 12) {
             favoriteMeter.frame(maxWidth: .infinity)
-            if !store.isPremium {
+            if store.shouldShowPremiumChrome {
                 FeedIconButton(symbol: "crown", label: "Premium", background: theme.control) {
                     showsPaywall = true
                 }
@@ -183,71 +183,58 @@ struct HomeView: View {
     }
 }
 
-/// Fixed-size paging window so the feed stays infinite without materializing tens of thousands of pages.
+/// Full-screen vertical paging — one quote per screen, system snap (no 3-page recycle glitch).
 private struct CircularQuoteFeed: View {
     let quotes: [String]
     let onQuoteShown: (String) -> Void
 
-    private static let window = 5
-    private static let center = window / 2
-
-    @State private var page: Int?
-    @State private var anchorIndex = 0
+    @State private var pageIndex: Int?
+    @State private var lastReportedIndex: Int?
 
     var body: some View {
         Group {
             if quotes.isEmpty {
                 Color.clear
             } else {
-                ScrollView(.vertical) {
-                    LazyVStack(spacing: 0) {
-                        ForEach(0..<Self.window, id: \.self) { pageIndex in
-                            QuotePage(quote: quote(at: pageIndex))
-                                .containerRelativeFrame([.horizontal, .vertical])
+                GeometryReader { geometry in
+                    let pageHeight = geometry.size.height
+                    ScrollView(.vertical) {
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(quotes.enumerated()), id: \.offset) { index, quote in
+                                QuotePage(quote: quote)
+                                    .frame(width: geometry.size.width, height: pageHeight)
+                                    .id(index)
+                            }
                         }
+                        .scrollTargetLayout()
                     }
-                    .scrollTargetLayout()
+                    .scrollTargetBehavior(.paging)
+                    .scrollIndicators(.hidden)
+                    .scrollPosition(id: $pageIndex, anchor: .top)
                 }
-                .scrollTargetBehavior(.paging)
-                .scrollPosition(id: $page)
-                .scrollIndicators(.hidden)
                 .ignoresSafeArea()
             }
         }
         .onAppear {
-            page = Self.center
-            onQuoteShown(quotes[anchorIndex])
+            if pageIndex == nil { pageIndex = 0 }
+            reportQuoteIfNeeded()
         }
-        .onChange(of: quotes) { _, newQuotes in
-            anchorIndex = 0
-            page = Self.center
-            if let first = newQuotes.first {
-                onQuoteShown(first)
-            }
+        .onChange(of: quotes) { _, _ in
+            pageIndex = 0
+            lastReportedIndex = nil
+            reportQuoteIfNeeded()
         }
-        .onChange(of: page) { _, newPage in
-            guard let newPage, !quotes.isEmpty else { return }
-            let delta = newPage - Self.center
-            guard delta != 0 else { return }
-
-            let count = quotes.count
-            anchorIndex = (anchorIndex + delta % count + count) % count
-            onQuoteShown(quotes[anchorIndex])
-
-            var transaction = Transaction()
-            transaction.disablesAnimations = true
-            withTransaction(transaction) {
-                page = Self.center
-            }
+        .onChange(of: pageIndex) { _, _ in
+            reportQuoteIfNeeded()
         }
+        .sensoryFeedback(.selection, trigger: pageIndex)
     }
 
-    private func quote(at pageIndex: Int) -> String {
-        let count = quotes.count
-        guard count > 0 else { return "" }
-        let offset = pageIndex - Self.center
-        let index = (anchorIndex + offset % count + count) % count
-        return quotes[index]
+    private func reportQuoteIfNeeded() {
+        guard let index = pageIndex, quotes.indices.contains(index) else { return }
+        guard index != lastReportedIndex else { return }
+        lastReportedIndex = index
+        onQuoteShown(quotes[index])
     }
 }
 

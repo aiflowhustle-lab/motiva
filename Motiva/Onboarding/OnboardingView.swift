@@ -19,6 +19,7 @@ struct OnboardingView: View {
             page(.welcome)
                 .navigationDestination(for: OnboardingStep.self, destination: page)
         }
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.9), trigger: model.step)
         .preferredColorScheme(model.step.usesDarkBackground ? .dark : .light)
         .overlay(alignment: .topTrailing) {
             if isPreview {

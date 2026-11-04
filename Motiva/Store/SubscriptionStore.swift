@@ -31,16 +31,29 @@ enum StoreError: LocalizedError {
 @Observable
 @MainActor
 final class SubscriptionStore: NSObject {
+    private static let premiumCacheKey = "motiva.cachedIsPremium"
+
     private(set) var products: [SubscriptionPlan: Product] = [:]
     private(set) var trialEligible: Set<SubscriptionPlan> = []
     private(set) var isPremium = false
     private(set) var isLoading = false
+    /// After the first check this launch (or a cached value from last launch), upgrade UI can rely on `isPremium`.
+    private(set) var entitlementsResolved = false
+
+    /// Crown / unlock banners — avoids a flash before RevenueCat answers on cold start.
+    var shouldShowPremiumChrome: Bool {
+        entitlementsResolved && !isPremium
+    }
 
     @ObservationIgnored private var packages: [SubscriptionPlan: Package] = [:]
     @ObservationIgnored private var configured = false
 
     override init() {
         super.init()
+        if UserDefaults.standard.object(forKey: Self.premiumCacheKey) != nil {
+            isPremium = UserDefaults.standard.bool(forKey: Self.premiumCacheKey)
+            entitlementsResolved = true
+        }
     }
 
     static func configureRevenueCat() {
@@ -81,6 +94,7 @@ final class SubscriptionStore: NSObject {
         async let productsTask: Void = fetchStoreProducts()
         _ = await (offeringsTask, productsTask)
         await refreshEntitlements()
+        entitlementsResolved = true
     }
 
     func purchase(_ plan: SubscriptionPlan) async throws -> PurchaseOutcome {
@@ -128,6 +142,7 @@ final class SubscriptionStore: NSObject {
         if !isPremium {
             await applyStoreKitEntitlements()
         }
+        entitlementsResolved = true
     }
 
     private func syncAfterPurchase(customerInfo: CustomerInfo) async {
@@ -150,6 +165,7 @@ final class SubscriptionStore: NSObject {
                   SubscriptionPlan(rawValue: transaction.productID) != nil,
                   transaction.revocationDate == nil else { continue }
             isPremium = true
+            persistPremiumState()
             return
         }
     }
@@ -194,6 +210,11 @@ final class SubscriptionStore: NSObject {
         }
         let anyActiveEntitlement = customerInfo.entitlements.active.values.contains { $0.isActive }
         isPremium = entitlement || subscribed || anyActiveEntitlement
+        persistPremiumState()
+    }
+
+    private func persistPremiumState() {
+        UserDefaults.standard.set(isPremium, forKey: Self.premiumCacheKey)
     }
 }
 

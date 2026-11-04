@@ -61,8 +61,8 @@ struct QuestionScreen: View {
                 }
             }
         }
-        .sensoryFeedback(.selection, trigger: choicePulse)
-        .sensoryFeedback(.selection, trigger: chosen) { _, new in new != nil }
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.85), trigger: choicePulse)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.9), trigger: chosen) { _, new in new != nil }
     }
 
     private func choice(_ option: String, index: Int) -> some View {

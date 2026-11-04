@@ -4,7 +4,10 @@ struct IntroScreen: View {
     let step: OnboardingStep
     let onContinue: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var typed = false
+    @State private var welcomeEntrance = WelcomeEntranceFlags()
+    @State private var welcomeReduceMotionFade = false
 
     private var title: String {
         switch step {
@@ -23,27 +26,70 @@ struct IntroScreen: View {
 
     private var welcomeLayout: some View {
         VStack(spacing: 0) {
-            QuoteMarkArt()
-                .frame(maxWidth: .infinity, minHeight: 190, maxHeight: .infinity)
-                .padding(.top, 92)
+            WelcomeLogoEntrance(
+                revealed: welcomeEntrance.logo,
+                animation: WelcomeMotion.logo
+            )
+            .frame(maxWidth: .infinity, minHeight: 190, maxHeight: .infinity)
+            .padding(.top, 92)
 
             VStack(spacing: 18) {
-                Text(title).titleStyle()
-                Text("Inspiration to think positively, stay\nconsistent, and focus on your growth")
-                    .font(.motivaBody)
-                    .multilineTextAlignment(.center)
-                    .lineSpacing(3)
+                VStack(spacing: 4) {
+                    HeadlineLineReveal(
+                        text: "Get motivation",
+                        revealed: welcomeEntrance.line1,
+                        animation: WelcomeMotion.headline
+                    )
+                    HeadlineLineReveal(
+                        text: "throughout the day",
+                        revealed: welcomeEntrance.line2,
+                        animation: WelcomeMotion.headline
+                    )
+                }
+
+                FadeSlideReveal(
+                    revealed: welcomeEntrance.subtitle,
+                    hiddenOffset: 18,
+                    animation: WelcomeMotion.subtitle
+                ) {
+                    Text("Inspiration to think positively, stay\nconsistent, and focus on your growth")
+                        .font(.motivaBody)
+                        .multilineTextAlignment(.center)
+                        .lineSpacing(3)
+                }
             }
             .padding(.top, 35)
             .padding(.bottom, 20)
 
             VStack(spacing: 18) {
                 Spacer(minLength: 40)
-                Button("Continue", action: onContinue).buttonStyle(.primary)
+                WelcomeButtonEntrance(
+                    revealed: welcomeEntrance.button,
+                    animation: WelcomeMotion.button,
+                    action: onContinue
+                )
                 legalCopy
+                    .opacity(welcomeEntrance.legal ? 1 : 0)
+                    .animation(WelcomeMotion.legal, value: welcomeEntrance.legal)
             }
             .frame(maxHeight: .infinity)
             .padding(.bottom, 8)
+        }
+        .opacity(reduceMotion ? (welcomeReduceMotionFade ? 1 : 0) : 1)
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.75), trigger: welcomeEntrance.logo) { _, visible in visible }
+        .onAppear {
+            welcomeEntrance = WelcomeEntranceFlags()
+            welcomeReduceMotionFade = false
+            if reduceMotion {
+                welcomeEntrance = WelcomeEntranceFlags(allVisible: true)
+                withAnimation(WelcomeMotion.reduceMotionFade) {
+                    welcomeReduceMotionFade = true
+                }
+            } else {
+                WelcomeEntranceTimeline.run(reduceMotion: false) { flags in
+                    welcomeEntrance = flags
+                }
+            }
         }
     }
 
@@ -65,7 +111,7 @@ struct IntroScreen: View {
         .contentShape(Rectangle())
         .onTapGesture { typed = true }
         .accessibilityAction(named: "Show full text") { typed = true }
-        .sensoryFeedback(.impact(weight: .light), trigger: typed) { _, done in done }
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.85), trigger: typed) { _, done in done }
     }
 
     private var legalCopy: some View {
@@ -191,7 +237,7 @@ struct RemindersScreen: View {
                 .padding(.horizontal, 16)
                 .padding(.vertical, 14)
                 .background(Color.motivaCard, in: RoundedRectangle(cornerRadius: Metrics.cornerRadius, style: .continuous))
-                .sensoryFeedback(.selection, trigger: model.dailyQuoteCount)
+                .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.8), trigger: model.dailyQuoteCount)
 
                 VStack(spacing: 0) {
                     timeRow("Start at", selection: $model.reminderStart)
@@ -296,6 +342,6 @@ struct StatementScreen: View {
         .contentShape(Rectangle())
         .onTapGesture { typed = true }
         .accessibilityAction(named: "Show full text") { typed = true }
-        .sensoryFeedback(.impact(weight: .light), trigger: typed) { _, done in done }
+        .sensoryFeedback(.impact(flexibility: .solid, intensity: 0.85), trigger: typed) { _, done in done }
     }
 }
