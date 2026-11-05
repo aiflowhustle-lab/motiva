@@ -75,6 +75,7 @@ final class AppState {
         var streakCount = 0
         var streakDay: CalendarDay?
         var reminders = ReminderSettings()
+        var celebratedFavoriteGoal = false
 
         init() {}
 
@@ -92,11 +93,14 @@ final class AppState {
             streakCount = (try? container.decodeIfPresent(Int.self, forKey: .streakCount)) ?? fallback.streakCount
             streakDay = (try? container.decodeIfPresent(CalendarDay.self, forKey: .streakDay)) ?? fallback.streakDay
             reminders = (try? container.decodeIfPresent(ReminderSettings.self, forKey: .reminders)) ?? fallback.reminders
+            celebratedFavoriteGoal = (try? container.decodeIfPresent(Bool.self, forKey: .celebratedFavoriteGoal)) ?? fallback.celebratedFavoriteGoal
         }
     }
 
     private static let storageKey = "appState"
     static let historyLimit = 100
+    /// First-week nudge on home; after this many saved quotes the progress pill is replaced by a Favorites shortcut.
+    static let favoriteGoal = 5
 
     private let defaults: UserDefaults
 
@@ -110,6 +114,7 @@ final class AppState {
     private(set) var streakCount: Int { didSet { save() } }
     private(set) var streakDay: CalendarDay? { didSet { save() } }
     var reminders: ReminderSettings { didSet { save() } }
+    var celebratedFavoriteGoal: Bool { didSet { save() } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -125,7 +130,16 @@ final class AppState {
         streakCount = stored.streakCount
         streakDay = stored.streakDay
         reminders = stored.reminders
+        celebratedFavoriteGoal = stored.celebratedFavoriteGoal
         backfillFollowedTopicsIfNeeded()
+        backfillCelebratedFavoriteGoalIfNeeded()
+    }
+
+    /// Existing users who already saved five quotes should not see the one-time celebration toast.
+    private func backfillCelebratedFavoriteGoalIfNeeded() {
+        guard favorites.count >= Self.favoriteGoal else { return }
+        guard !celebratedFavoriteGoal else { return }
+        celebratedFavoriteGoal = true
     }
 
     /// One-time migration for users who onboarded before `followedTopics` existed.
@@ -228,6 +242,7 @@ final class AppState {
         streakCount = fresh.streakCount
         streakDay = fresh.streakDay
         reminders = fresh.reminders
+        celebratedFavoriteGoal = fresh.celebratedFavoriteGoal
         defaults.removeObject(forKey: Self.storageKey)
     }
 
@@ -243,6 +258,7 @@ final class AppState {
         stored.streakCount = streakCount
         stored.streakDay = streakDay
         stored.reminders = reminders
+        stored.celebratedFavoriteGoal = celebratedFavoriteGoal
         guard let data = try? JSONEncoder().encode(stored) else { return }
         defaults.set(data, forKey: Self.storageKey)
     }

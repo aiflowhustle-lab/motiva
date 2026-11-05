@@ -136,4 +136,14 @@ struct AppStateTests {
         #expect(app.theme == .classic)
         #expect(AppState(defaults: defaults).favorites.isEmpty)
     }
+
+    @Test func fiveSavedQuotesSkipCelebrationBackfill() {
+        let app = AppState(defaults: defaults)
+        for index in 0..<AppState.favoriteGoal {
+            app.toggleFavorite("Quote \(index)")
+        }
+        let relaunched = AppState(defaults: defaults)
+        #expect(relaunched.favorites.count == AppState.favoriteGoal)
+        #expect(relaunched.celebratedFavoriteGoal)
+    }
 }
