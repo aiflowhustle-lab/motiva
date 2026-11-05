@@ -113,7 +113,7 @@ struct WallpapersView: View {
                             showsPaywall = true
                         } else {
                             app.theme = theme
-                            onDone()
+                            if showsClose { onDone() }
                         }
                     } label: {
                         VStack(spacing: 14) {

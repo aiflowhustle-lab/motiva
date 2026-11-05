@@ -35,6 +35,7 @@ struct MotivaApp: App {
             .task {
                 await store.load()
                 if hasCompletedOnboarding {
+                    PremiumAccess.clampSelection(app: app, isPremium: store.isPremium)
                     WidgetQuoteSync.refresh(
                         followedTopics: app.followedTopics,
                         theme: app.theme

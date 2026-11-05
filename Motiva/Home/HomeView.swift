@@ -76,7 +76,6 @@ struct HomeView: View {
         }
         .onAppear {
             registerOpen()
-            applyPremiumClamp(isPremium: store.isPremium)
             Task { await store.refreshEntitlements() }
             #if DEBUG
             // Launch with `-homeSheet topics|wallpapers|profile` to open a sheet directly.
