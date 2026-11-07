@@ -5,6 +5,8 @@
 	<!-- Export compliance: HTTPS / StoreKit / system APIs only (no custom cryptography). -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>Motiva sends quote reminders at the times you choose.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>BricolageGrotesque-Bold.ttf</string>

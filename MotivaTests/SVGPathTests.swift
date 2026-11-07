@@ -82,6 +82,13 @@ struct QuoteLibraryTests {
         #expect(quotes == discipline)
     }
 
+    @Test func widgetTopicModesUseDifferentPools() {
+        let mix = WidgetQuoteSync.quotes(followedTopics: ["Motivation"], topicMode: .mix)
+        let general = WidgetQuoteSync.quotes(followedTopics: ["Motivation"], topicMode: .forYou)
+        #expect(mix == QuoteLibrary.topics.first { $0.name == "Motivation" }!.quotes)
+        #expect(general == QuoteLibrary.forYou)
+    }
+
     @Test func browsingTopicDoesNotChangePersonalizedPool() {
         let followed = QuoteLibrary.quotes(for: nil, followedTopics: ["Discipline"])
         let browsingMotivation = QuoteLibrary.quotes(for: "Motivation", followedTopics: ["Discipline"])

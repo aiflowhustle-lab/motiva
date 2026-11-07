@@ -28,6 +28,9 @@ enum PremiumAccess {
         if !canUse(theme: app.theme, isPremium: isPremium) {
             app.theme = .classic
         }
+        if !canUse(theme: app.widgetTheme, isPremium: isPremium) {
+            app.widgetTheme = .classic
+        }
         if !canUse(topicName: app.topic, isPremium: isPremium) {
             app.topic = nil
         }

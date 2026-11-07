@@ -25,7 +25,9 @@ struct MotivaApp: App {
                         }
                         WidgetQuoteSync.refresh(
                             followedTopics: app.followedTopics,
-                            theme: app.theme
+                            widgetTheme: app.widgetTheme,
+                            topicMode: app.widgetTopicMode,
+                            refresh: app.widgetRefresh
                         )
                     }
                 }
@@ -38,7 +40,9 @@ struct MotivaApp: App {
                     PremiumAccess.clampSelection(app: app, isPremium: store.isPremium)
                     WidgetQuoteSync.refresh(
                         followedTopics: app.followedTopics,
-                        theme: app.theme
+                        widgetTheme: app.widgetTheme,
+                        topicMode: app.widgetTopicMode,
+                        refresh: app.widgetRefresh
                     )
                 }
             }

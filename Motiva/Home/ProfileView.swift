@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum ProfileDestination: Hashable {
-    case topics, wallpapers, reminders, settings
+    case topics, wallpapers, widgets, reminders, settings
 }
 
 struct ProfileView: View {
@@ -59,6 +59,7 @@ struct ProfileView: View {
             switch destination {
             case .topics: FollowingTopicsView()
             case .wallpapers: WallpapersView(showsClose: false, onDone: onDone)
+            case .widgets: WidgetSettingsView()
             case .reminders: ReminderSettingsView()
             case .settings: SettingsView()
             }
@@ -86,6 +87,8 @@ struct ProfileView: View {
             NavigationLink(value: ProfileDestination.topics) { label }.buttonStyle(CardButtonStyle())
         case .wallpapers:
             NavigationLink(value: ProfileDestination.wallpapers) { label }.buttonStyle(CardButtonStyle())
+        case .homeWidget:
+            NavigationLink(value: ProfileDestination.widgets) { label }.buttonStyle(CardButtonStyle())
         case .reminders:
             NavigationLink(value: ProfileDestination.reminders) { label }.buttonStyle(CardButtonStyle())
         default:
@@ -104,6 +107,13 @@ struct WallpapersView: View {
 
     var body: some View {
         SheetPage(title: "Wallpapers") {
+            Text("Applies to quotes inside the app — not your Home Screen widget.")
+                .font(.system(size: 15))
+                .foregroundStyle(Color.sheetMuted)
+                .lineSpacing(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 8)
+
             LazyVGrid(columns: [GridItem(.flexible(), spacing: 18), GridItem(.flexible(), spacing: 18)], spacing: 18) {
                 ForEach(FeedTheme.allCases) { theme in
                     let selected = app.theme == theme

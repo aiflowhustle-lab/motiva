@@ -76,6 +76,9 @@ final class AppState {
         var streakDay: CalendarDay?
         var reminders = ReminderSettings()
         var celebratedFavoriteGoal = false
+        var widgetTheme: FeedTheme = .classic
+        var widgetTopicMode: WidgetTopicMode = .mix
+        var widgetRefresh: WidgetRefreshInterval = .hourly
 
         init() {}
 
@@ -94,6 +97,9 @@ final class AppState {
             streakDay = (try? container.decodeIfPresent(CalendarDay.self, forKey: .streakDay)) ?? fallback.streakDay
             reminders = (try? container.decodeIfPresent(ReminderSettings.self, forKey: .reminders)) ?? fallback.reminders
             celebratedFavoriteGoal = (try? container.decodeIfPresent(Bool.self, forKey: .celebratedFavoriteGoal)) ?? fallback.celebratedFavoriteGoal
+            widgetTheme = (try? container.decodeIfPresent(FeedTheme.self, forKey: .widgetTheme)) ?? theme
+            widgetTopicMode = (try? container.decodeIfPresent(WidgetTopicMode.self, forKey: .widgetTopicMode)) ?? fallback.widgetTopicMode
+            widgetRefresh = (try? container.decodeIfPresent(WidgetRefreshInterval.self, forKey: .widgetRefresh)) ?? fallback.widgetRefresh
         }
     }
 
@@ -107,7 +113,7 @@ final class AppState {
     var favorites: [String] { didSet { save() } }
     var ownQuotes: [String] { didSet { save() } }
     private(set) var history: [String] { didSet { save() } }
-    var theme: FeedTheme { didSet { save(); syncWidgetFeed() } }
+    var theme: FeedTheme { didSet { save() } }
     var topic: String? { didSet { save() } }
     var followedTopics: [String] { didSet { save(); syncWidgetFeed() } }
     var writtenGoals: String { didSet { save() } }
@@ -115,6 +121,9 @@ final class AppState {
     private(set) var streakDay: CalendarDay? { didSet { save() } }
     var reminders: ReminderSettings { didSet { save() } }
     var celebratedFavoriteGoal: Bool { didSet { save() } }
+    var widgetTheme: FeedTheme { didSet { save(); syncWidgetFeed() } }
+    var widgetTopicMode: WidgetTopicMode { didSet { save(); syncWidgetFeed() } }
+    var widgetRefresh: WidgetRefreshInterval { didSet { save(); syncWidgetFeed() } }
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
@@ -131,6 +140,9 @@ final class AppState {
         streakDay = stored.streakDay
         reminders = stored.reminders
         celebratedFavoriteGoal = stored.celebratedFavoriteGoal
+        widgetTheme = stored.widgetTheme
+        widgetTopicMode = stored.widgetTopicMode
+        widgetRefresh = stored.widgetRefresh
         backfillFollowedTopicsIfNeeded()
         backfillCelebratedFavoriteGoalIfNeeded()
     }
@@ -243,6 +255,9 @@ final class AppState {
         streakDay = fresh.streakDay
         reminders = fresh.reminders
         celebratedFavoriteGoal = fresh.celebratedFavoriteGoal
+        widgetTheme = fresh.widgetTheme
+        widgetTopicMode = fresh.widgetTopicMode
+        widgetRefresh = fresh.widgetRefresh
         defaults.removeObject(forKey: Self.storageKey)
     }
 
@@ -259,11 +274,19 @@ final class AppState {
         stored.streakDay = streakDay
         stored.reminders = reminders
         stored.celebratedFavoriteGoal = celebratedFavoriteGoal
+        stored.widgetTheme = widgetTheme
+        stored.widgetTopicMode = widgetTopicMode
+        stored.widgetRefresh = widgetRefresh
         guard let data = try? JSONEncoder().encode(stored) else { return }
         defaults.set(data, forKey: Self.storageKey)
     }
 
     private func syncWidgetFeed() {
-        WidgetQuoteSync.refresh(followedTopics: followedTopics, theme: theme)
+        WidgetQuoteSync.refresh(
+            followedTopics: followedTopics,
+            widgetTheme: widgetTheme,
+            topicMode: widgetTopicMode,
+            refresh: widgetRefresh
+        )
     }
 }

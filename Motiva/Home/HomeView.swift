@@ -112,9 +112,6 @@ struct HomeView: View {
         .onChange(of: app.followedTopics) { _, _ in
             Task { await app.rescheduleReminders() }
         }
-        .onChange(of: app.theme) { _, _ in
-            WidgetQuoteSync.refresh(followedTopics: app.followedTopics, theme: app.theme)
-        }
         .onChange(of: app.favorites.count) { oldCount, newCount in
             guard newCount >= AppState.favoriteGoal, oldCount < AppState.favoriteGoal else { return }
             guard !app.celebratedFavoriteGoal else { return }
@@ -126,14 +123,13 @@ struct HomeView: View {
 
     private var topBar: some View {
         HStack(spacing: 12) {
-            Group {
-                if showsFavoriteProgress {
-                    favoriteProgressMeter
-                } else {
-                    favoritesShortcut
-                }
+            if showsFavoriteProgress {
+                favoriteProgressMeter
+                    .frame(maxWidth: .infinity)
+            } else {
+                favoritesShortcut
+                    .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
 
             if store.shouldShowPremiumChrome {
                 FeedIconButton(symbol: "crown", label: "Premium", background: theme.control) {
@@ -175,13 +171,21 @@ struct HomeView: View {
         Button {
             sheet = .favorites
         } label: {
-            HStack(spacing: 10) {
+            HStack(spacing: 11) {
                 Image(systemName: "heart.fill")
                     .font(.system(size: 19, weight: .light))
-                Text("\(app.favorites.count)")
+                Text("\(AppState.favoriteGoal)/\(AppState.favoriteGoal)")
                     .font(.system(size: 18))
                     .monospacedDigit()
-                    .contentTransition(.numericText())
+                Capsule()
+                    .fill(theme.track)
+                    .frame(width: 110, height: 7)
+                    .overlay(alignment: .leading) {
+                        Capsule()
+                            .fill(theme.foreground)
+                            .frame(width: 110)
+                    }
+                    .clipShape(Capsule())
             }
             .padding(.horizontal, 17)
             .padding(.vertical, 9)

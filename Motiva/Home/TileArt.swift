@@ -4,7 +4,7 @@ enum TileKind: String, CaseIterable, Identifiable {
     case topics, wallpapers, reminders, homeWidget, lockWidget, appIcon, watch, bundle
 
     /// Profile grid only shows features that ship in v1.
-    static let profileTiles: [TileKind] = [.topics, .wallpapers, .reminders]
+    static let profileTiles: [TileKind] = [.topics, .wallpapers, .homeWidget, .reminders]
 
     var id: String { rawValue }
 
@@ -13,7 +13,7 @@ enum TileKind: String, CaseIterable, Identifiable {
         case .topics: "Topics you follow"
         case .wallpapers: "Wallpapers"
         case .reminders: "Reminders"
-        case .homeWidget: "Home Screen widgets"
+        case .homeWidget: "Widgets"
         case .lockWidget: "Lock Screen widgets"
         case .appIcon: "App icon"
         case .watch: "Watch"

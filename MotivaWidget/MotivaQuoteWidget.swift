@@ -18,7 +18,7 @@ struct MotivaQuoteWidget: Widget {
                 }
         }
         .configurationDisplayName("Daily quote")
-        .description("Make it yours by editing this widget\nfrom the app's widget settings.")
+        .description("Customize theme, topics, and refresh in Profile → Widgets.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -45,18 +45,25 @@ struct MotivaQuoteProvider: TimelineProvider {
     func getTimeline(in context: Context, completion: @escaping (Timeline<MotivaQuoteEntry>) -> Void) {
         let snapshot = WidgetSharedStore.load()
         let palette = WidgetPalette.from(theme: snapshot.theme)
+        let refresh = WidgetRefreshInterval(rawValue: snapshot.refresh) ?? .hourly
         let calendar = Calendar.current
         let now = Date.now
         var entries: [MotivaQuoteEntry] = []
 
-        for hourOffset in 0..<24 {
-            guard let date = calendar.date(byAdding: .hour, value: hourOffset, to: now) else { continue }
-            let quote = snapshot.quotes[hourOffset % snapshot.quotes.count]
-            entries.append(MotivaQuoteEntry(date: date, quote: quote, palette: palette))
+        switch refresh {
+        case .hourly:
+            for hourOffset in 0..<24 {
+                guard let date = calendar.date(byAdding: .hour, value: hourOffset, to: now) else { continue }
+                let quote = snapshot.quotes[hourOffset % snapshot.quotes.count]
+                entries.append(MotivaQuoteEntry(date: date, quote: quote, palette: palette))
+            }
+            completion(Timeline(entries: entries, policy: .atEnd))
+        case .daily:
+            let quote = snapshot.quotes[calendar.component(.day, from: now) % snapshot.quotes.count]
+            entries.append(MotivaQuoteEntry(date: now, quote: quote, palette: palette))
+            let startOfTomorrow = calendar.startOfDay(for: calendar.date(byAdding: .day, value: 1, to: now) ?? now)
+            completion(Timeline(entries: entries, policy: .after(startOfTomorrow)))
         }
-
-        let timeline = Timeline(entries: entries, policy: .atEnd)
-        completion(timeline)
     }
 
     private func galleryEntry() -> MotivaQuoteEntry {
@@ -66,8 +73,16 @@ struct MotivaQuoteProvider: TimelineProvider {
     private func makeEntry(at date: Date) -> MotivaQuoteEntry {
         let snapshot = WidgetSharedStore.load()
         let palette = WidgetPalette.from(theme: snapshot.theme)
-        let hour = Calendar.current.component(.hour, from: date)
-        let quote = snapshot.quotes[hour % snapshot.quotes.count]
+        let refresh = WidgetRefreshInterval(rawValue: snapshot.refresh) ?? .hourly
+        let calendar = Calendar.current
+        let index: Int
+        switch refresh {
+        case .hourly:
+            index = calendar.component(.hour, from: date)
+        case .daily:
+            index = calendar.component(.day, from: date)
+        }
+        let quote = snapshot.quotes[index % snapshot.quotes.count]
         return MotivaQuoteEntry(date: date, quote: quote, palette: palette)
     }
 }
